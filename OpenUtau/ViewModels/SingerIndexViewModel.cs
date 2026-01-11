@@ -132,30 +132,16 @@ namespace OpenUtau.App.ViewModels {
             IsDownloading = true;
             DownloadName = ((SingerVariant)variant).Names["en"];
 
-            using var client = new HttpClient();
-            string url = await DownloadManager.GetDirectDownloadLink(((SingerVariant)variant).FileUrl, client);
-
-            using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
-            response.EnsureSuccessStatusCode();
-
             string dest = Path.Join(PathManager.Inst.CachePath, $"{Guid.NewGuid()}");
 
-            var totalBytes = response.Content.Headers.ContentLength;
-
-            DownloadTotalSize = totalBytes.HasValue ? DownloadManager.HumanizeFileSize(totalBytes.Value) : "Unknown";
-
-            using var cs = await response.Content.ReadAsStreamAsync();
-
-            var progress = new Progress<double>(readBytes => {
+            var progress = new Progress<DownloadProgress>(dp => {
                 Dispatcher.UIThread.InvokeAsync(() => {
-                    if (totalBytes.HasValue) {
-                        DownloadProgress = (double) readBytes * 100 / totalBytes.Value;
-                    }
-                    DownloadCurrentSize = DownloadManager.HumanizeFileSize(readBytes);
+                    DownloadProgress = (double) dp.BytesDownloaded * 100 / dp.TotalBytes;
+                    DownloadCurrentSize = DownloadManager.HumanizeFileSize(dp.BytesDownloaded);
                 });
             });
 
-            await DownloadManager.DownloadFile(cs, dest, progress, cancellation.Token);
+            await DownloadManager.DownloadFile(((SingerVariant)variant).FileUrl, dest, progress, cancellation.Token);
 
             var setup = new SingerSetupDialog() {
                 DataContext = new SingerSetupViewModel() {

@@ -8,20 +8,38 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace OpenUtau.Core.Util {
-    public static partial class DownloadManager {
+    public class DownloadProgress(long downloaded, long total) {
+        public long BytesDownloaded { get; } = downloaded;
+        public long TotalBytes { get; } = total;
+    }
 
-        public static async Task DownloadFile(Stream cs, string dest, IProgress<double> progress, CancellationToken ct) {
-            using var fs = File.Create(dest);
+    public partial class DownloadManager {
 
-            var buffer = new byte[8192];
-            long bytesRead = 0;
-            int bytesReadInChunk;
+        public static async Task DownloadFile(
+            string url,
+            string dest,
+            IProgress<DownloadProgress>? progress,
+            CancellationToken cancellationToken)
+        {
+            using var client = new HttpClient();
+            url = await GetDirectDownloadLink(url, client);
+            using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+            response.EnsureSuccessStatusCode();
 
-            while ((bytesReadInChunk = await cs.ReadAsync(buffer, 0, buffer.Length, ct)) > 0) {
-                await fs.WriteAsync(buffer, 0, bytesReadInChunk, ct);
-                bytesRead += bytesReadInChunk;
+            long totalBytes = response.Content.Headers.ContentLength ?? 0;
 
-                progress.Report((double)bytesRead);
+            using var cs = await response.Content.ReadAsStreamAsync(cancellationToken);
+            using var fs = new FileStream(dest, FileMode.Create, FileAccess.Write, FileShare.None);
+
+            var buffer = new byte[81920];
+            long totalRead = 0;
+            int read;
+            while ((read = await cs.ReadAsync(buffer, 0, buffer.Length, cancellationToken)) > 0)
+            {
+                await fs.WriteAsync(buffer, 0, read, cancellationToken);
+                totalRead += read;
+
+                progress?.Report(new DownloadProgress(totalRead, totalBytes));
             }
         }
 
