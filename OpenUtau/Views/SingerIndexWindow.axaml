@@ -1,0 +1,201 @@
+<Window xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:OpenUtau.App.ViewModels"
+    xmlns:styles="clr-namespace:Material.Styles;assembly=Material.Styles"
+    xmlns:converters="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
+    mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="460"
+    x:Class="OpenUtau.App.Views.SingerIndexWindow"
+    Icon="/Assets/open-utau.ico"
+    Title="Singer Index"
+    WindowStartupLocation="CenterScreen"
+    Width="700" MinHeight="700">
+  <Grid RowDefinitions="*,auto">
+    <Carousel Grid.Row="0" Margin="20" SelectedIndex="{Binding Page}">
+      <Grid RowDefinitions="auto,*" ColumnDefinitions="*,10,auto">
+        <TextBox Watermark="Search Singer" VerticalAlignment="Center" Grid.Column="0" Text="{Binding Search}"/>
+        <ComboBox Grid.Column="2" Margin="0" SelectedIndex="{Binding Sorting}">
+          <ComboBoxItem>Sort A-Z</ComboBoxItem>
+          <ComboBoxItem>Sort Z-A</ComboBoxItem>
+        </ComboBox>
+        <Panel Grid.Row="1" Grid.ColumnSpan="3" HorizontalAlignment="Center" VerticalAlignment="Center">
+          <TextBlock Text="Indexing..." IsVisible="{Binding IsIndexing}"/>
+        </Panel>
+        <ScrollViewer Grid.Row="1" Grid.ColumnSpan="3">
+        <ItemsControl ItemsSource="{Binding SingersFiltered}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <VirtualizingStackPanel />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Button Background="Transparent" CornerRadius="5" BorderThickness="1" BorderBrush="{DynamicResource BorderColor}"
+                      Padding="15" Height="NaN" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                      Command="{Binding $parent[ItemsControl].DataContext.OnSelectedSinger}" CommandParameter="{Binding}">
+                <StackPanel Spacing="8">
+                  <StackPanel Orientation="Horizontal" Spacing="5">
+                    <TextBlock Text="{Binding Names[en]}" FontSize="16" FontWeight="Bold"/>
+                    <TextBlock VerticalAlignment="Center" Text="{Binding Id, StringFormat='@{0}'}" FontSize="13" FontWeight="Thin"/>
+                  </StackPanel>
+                  <TextBlock Text="{Binding AltNames}" FontSize="13" Opacity=".8" FontWeight="Thin"/>
+                  <ItemsControl ItemsSource="{Binding AllVariantsEn}" >
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <WrapPanel HorizontalAlignment="Left"/>
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate>
+                        <Border CornerRadius="10" Padding="6,3" Margin="0,0,3,3">
+                          <Border.Background>
+                            <SolidColorBrush Color="{DynamicResource BorderColor}" Opacity=".25"/>
+                          </Border.Background>
+                          <TextBlock FontSize="13" Text="{Binding}"/>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  <ItemsControl ItemsSource="{Binding AllTags}" >
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <WrapPanel HorizontalAlignment="Left"/>
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate>
+                        <Border CornerRadius="10" Padding="6,3" Margin="0,0,3,3">
+                          <Border.Background>
+                            <SolidColorBrush Color="{DynamicResource SystemAccentColorLight1}" Opacity=".3"/>
+                          </Border.Background>
+                          <TextBlock Foreground="{DynamicResource SystemAccentColor}" Text="{Binding}"/>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </StackPanel>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+        </ScrollViewer>
+      </Grid>
+
+      <Grid RowDefinitions="auto,*" IsEnabled="{Binding !SelectedSinger.IsInstalling}">
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10" Margin="0,0,0,10">
+          <Button Content="Back" Command="{Binding OnBack}" Margin="0" Padding="6,3" Height="NaN"/>
+          <TextBlock Text="{Binding SelectedSinger.Names[en]}" FontSize="20" FontWeight="Bold"/>
+          <TextBlock VerticalAlignment="Center" Text="{Binding SelectedSinger.Id, StringFormat='@{0}'}" FontSize="14" FontWeight="Thin"/>
+        </StackPanel>
+        <ScrollViewer Grid.Row="1">
+          <StackPanel Spacing="10">
+            <Border CornerRadius="5" BorderThickness="1" BorderBrush="{DynamicResource BorderColor}" Padding="5">
+              <Border CornerRadius="5" ClipToBounds="True" HorizontalAlignment="Center">
+                <Image Name="ProfileImage" Source="{Binding SelectedSinger.ProfileBitmap^}" MaxHeight="200" RenderOptions.BitmapInterpolationMode="HighQuality"/>
+              </Border>
+            </Border>
+            <Border CornerRadius="5" BorderThickness="1" BorderBrush="{DynamicResource BorderColor}" Padding="15">
+              <Grid RowDefinitions="auto,auto,auto,auto" ColumnDefinitions="auto,10,*">
+                <TextBlock Grid.Row="0" Text="Details" FontSize="18" Margin="0,0,0,10"/>
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Homepage" FontSize="14"/>
+                <HyperlinkButton Grid.Row="1" Grid.Column="2" NavigateUri="{Binding SelectedSinger.HomepageUrl}" Content="{Binding $self.NavigateUri}" FontSize="14" Padding="0"/>
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Owners" FontSize="14"/>
+                <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding SelectedSinger.OwnersStr}" FontSize="14" TextWrapping="Wrap"/>
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Authors" FontSize="14"/>
+                <TextBlock Grid.Row="3" Grid.Column="2" Text="{Binding SelectedSinger.AuthorsStr}" FontSize="14" TextWrapping="Wrap"/>
+              </Grid>
+            </Border>
+            <Border CornerRadius="5" BorderThickness="1" BorderBrush="{DynamicResource BorderColor}" Padding="15">
+              <StackPanel>
+                <TextBlock Grid.Row="0" Text="Names" FontSize="18" Margin="0,0,0,10"/>
+                <ItemsControl ItemsSource="{Binding SelectedSinger.Names}" >
+                  <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                      <StackPanel HorizontalAlignment="Left" Grid.IsSharedSizeScope="True"/>
+                    </ItemsPanelTemplate>
+                  </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                      <StackPanel>
+                        <Grid ColumnDefinitions="30,50,*">
+                          <TextBlock Grid.Column="0" Text="{Binding Key}" FontSize="14"/>
+                          <TextBlock Grid.Column="2" Text="{Binding Value}" FontSize="14" Padding="0"/>
+                        </Grid>
+                      </StackPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </Border>
+            <Separator Margin="0,5"/>
+            <TextBlock Grid.Row="0" Text="Variants" FontSize="18"/>
+            <ItemsControl ItemsSource="{Binding SelectedSinger.CompatVariants}" >
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Spacing="10"/>
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border CornerRadius="5" BorderThickness="1" BorderBrush="{DynamicResource BorderColor}" Padding="15">
+                    <StackPanel Spacing="5">
+                      <Grid RowDefinitions="auto,auto" ColumnDefinitions="*,auto">
+                        <TextBlock Grid.Row="0" Text="{Binding Names[en]}" FontSize="14" FontWeight="Bold"/>
+                        <TextBlock Grid.Row="1" Text="{Binding AltNames}" FontSize="12" Padding="0"/>
+                        <Button Grid.Column="1" Content="Install" Command="{Binding $parent[ItemsControl].DataContext.OnDownloadVariant}" CommandParameter="{Binding}"
+                                IsVisible="{Binding FileUrl, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}" IsEnabled="{Binding !$parent[ItemsControl].DataContext.IsDownloading}"/>
+                      </Grid>
+                      <ItemsControl ItemsSource="{Binding Tags}" >
+                        <ItemsControl.ItemsPanel>
+                          <ItemsPanelTemplate>
+                            <WrapPanel HorizontalAlignment="Left"/>
+                          </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                          <DataTemplate>
+                            <Border CornerRadius="10" Padding="6,3" Margin="0,0,3,3">
+                              <Border.Background>
+                                <SolidColorBrush Color="{DynamicResource SystemAccentColorLight1}" Opacity=".3"/>
+                              </Border.Background>
+                              <TextBlock Foreground="{DynamicResource SystemAccentColor}" Text="{Binding}"/>
+                            </Border>
+                          </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                      </ItemsControl>
+                      <StackPanel Orientation="Horizontal" 
+                                  IsVisible="{Binding FileUrl, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}">
+                        <TextBlock Text="Direct Download: " FontSize="12"/>
+                        <HyperlinkButton NavigateUri="{Binding FileUrl}" Content="{Binding $self.NavigateUri}" FontSize="12" Padding="0"/>
+                      </StackPanel>
+                      <StackPanel Orientation="Horizontal"
+                                  IsVisible="{Binding DownloadPageUrl, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}">
+                        <TextBlock Text="Download Page: " FontSize="12"/>
+                        <HyperlinkButton NavigateUri="{Binding DownloadPageUrl}" Content="{Binding $self.NavigateUri}" FontSize="12" Padding="0"/>
+                      </StackPanel>
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </StackPanel>
+        </ScrollViewer>
+      </Grid>
+    </Carousel>
+
+    <Grid RowDefinitions="auto,auto" ColumnDefinitions="*,auto" Grid.Row="5" IsVisible="{Binding IsDownloading}">
+      <TextBlock Grid.Row="0" Grid.Column="0" Margin="8,4" VerticalAlignment="Center">
+        <TextBlock.Text>
+          <MultiBinding StringFormat="{}Downloading '{0}': {1:F2}% [ {2} / {3} ]">
+              <Binding Path="DownloadName" />
+              <Binding Path="DownloadProgress" />
+              <Binding Path="DownloadCurrentSize" />
+              <Binding Path="DownloadTotalSize" />
+          </MultiBinding>
+        </TextBlock.Text>
+      </TextBlock>
+      <ProgressBar Grid.Row="2" Grid.ColumnSpan="2" Value="{Binding DownloadProgress}"/>
+      <Button Grid.Row="0" Grid.Column="1" Content="Cancel" Command="{Binding OnDownloadCancel}" Margin="8,4"/>
+    </Grid>
+  </Grid>
+</Window>

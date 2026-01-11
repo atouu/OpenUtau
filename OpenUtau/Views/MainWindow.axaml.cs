@@ -519,6 +519,11 @@ namespace OpenUtau.App.Views {
             await OpenSingersWindowAsync();
         }
 
+        void OnMenuSingerIndex(object sender, RoutedEventArgs e) {
+            var singerIndex = new SingerIndexWindow();
+            singerIndex.Show();
+        }
+
         /// <summary>
         /// Check if a track has a singer and if it exists.
         /// If the user haven't selected a singer for the track, or the singer specified in ustx project doesn't exist, return null.
