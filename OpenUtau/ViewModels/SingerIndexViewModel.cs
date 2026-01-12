@@ -13,7 +13,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using OpenUtau.App.Views;
 using OpenUtau.Core;
-using OpenUtau.Core.Util;
 using ReactiveUI;
 using ReactiveUI.Fody.Helpers;
 
@@ -29,7 +28,7 @@ namespace OpenUtau.App.ViewModels {
             public string[] Owners = [];
             public string[] Authors = [];
 
-            public Task<Bitmap?> ProfileBitmap => getImageUrlBitmap(ProfileImageUrl);
+            public Task<Bitmap?> ProfileBitmap => GetImageUrlBitmap(ProfileImageUrl);
             public string AltNames => string.Join(" / ", Names.Select(v => v.Value));
             public string[] AllVariantsEn => [.. Variants.Select(v => v.Names["en"])];
             public string[] AllTags => [.. Variants.SelectMany(x => x.Tags).Distinct()];
@@ -65,7 +64,7 @@ namespace OpenUtau.App.ViewModels {
             "application/octet-stream"
         ];
 
-        private readonly CancellationTokenSource cancellation = new();
+        private CancellationTokenSource? cancellation;
         private IEnumerable<SingerEntry>? singers;
 
         [Reactive] public IEnumerable<SingerEntry>? SingersFiltered { get; set; }
@@ -74,6 +73,7 @@ namespace OpenUtau.App.ViewModels {
         [Reactive] public bool IsIndexing { get; set; }
         [Reactive] public int Page { get; set; }
         [Reactive] public int Sorting { get; set; }
+
         [Reactive] public string? DownloadName { get; set; }
         [Reactive] public string? DownloadCurrentSize { get; set; }
         [Reactive] public string? DownloadTotalSize { get; set; }
@@ -84,7 +84,6 @@ namespace OpenUtau.App.ViewModels {
 
         public SingerIndexViewModel() {
             DownloadVariant = new();
-            DownloadName = string.Empty;
             Search = string.Empty;
 
             Task.Run(async () => {
@@ -103,6 +102,7 @@ namespace OpenUtau.App.ViewModels {
                         singers = singers?.OrderByDescending(v => v.Names["en"]);
                     }
                     SingersFiltered = singers;
+                    Search = string.Empty;
                 });
 
             this.WhenAnyValue(vm => vm.Search)
@@ -129,6 +129,8 @@ namespace OpenUtau.App.ViewModels {
             if (!valid) {
                 return;
             }
+
+            cancellation = new();
             IsDownloading = true;
             DownloadName = ((SingerVariant)variant).Names["en"];
 
@@ -136,41 +138,43 @@ namespace OpenUtau.App.ViewModels {
 
             var progress = new Progress<DownloadProgress>(dp => {
                 Dispatcher.UIThread.InvokeAsync(() => {
-                    DownloadProgress = (double) dp.BytesDownloaded * 100 / dp.TotalBytes;
+                    DownloadProgress = dp.BytesDownloaded * 100 / dp.TotalBytes;
                     DownloadCurrentSize = DownloadManager.HumanizeFileSize(dp.BytesDownloaded);
+                    DownloadTotalSize = DownloadManager.HumanizeFileSize(dp.TotalBytes);
                 });
             });
 
-            await DownloadManager.DownloadFile(((SingerVariant)variant).FileUrl, dest, progress, cancellation.Token);
+            await DownloadManager.DownloadFile(
+                ((SingerVariant)variant).FileUrl, dest, cancellation.Token, progress);
 
-            var setup = new SingerSetupDialog() {
-                DataContext = new SingerSetupViewModel() {
-                    ArchiveFilePath = dest,
-                }
-            };
-            setup.Show();
+            if (!cancellation.Token.IsCancellationRequested) {
+                var setup = new SingerSetupDialog() {
+                    DataContext = new SingerSetupViewModel() {
+                        ArchiveFilePath = dest,
+                    }
+                };
+                setup.Show();
+
+                setup.Closed += (s, e) => {
+                    File.Delete(dest);
+                };
+            }
 
             IsDownloading = false;
         }
 
         public void OnDownloadCancel() {
-            cancellation.Cancel();
-            IsDownloading = false;
+            cancellation?.Cancel();
         }
 
         private static async Task<List<SingerEntry>> SyncVoicebanks() {
             List<SingerEntry> entries = [];
 
-            using var client = new HttpClient() {
-                DefaultRequestHeaders = {
-                    {"User-Agent", "Firefox"}
-                },
-                Timeout = TimeSpan.FromSeconds(30)
-            };
+            using var client = new HttpClient();
 
             char[] abc = [.. "abcdefghijklmnopqrstuvwxyz"];
 
-            var requests  = abc.Select(chr => client.GetAsync($"https://raw.githubusercontent.com/openutau/svs-index/main/data/singers/{chr}.json"));
+            var requests = abc.Select(chr => client.GetAsync($"https://raw.githubusercontent.com/openutau/svs-index/main/data/singers/{chr}.json"));
 
             await Task.WhenAll(requests);
 
@@ -192,20 +196,17 @@ namespace OpenUtau.App.ViewModels {
                 }
             }
 
-            return [.. entries.Where(v => v.AllTags.Any(t => SingerTagFilters.Contains(t)))];
+            return [.. entries.Where(v => v.AllTags.Any(t => SingerTagFilters.Contains(t))).OrderBy(v => v.AltNames)];
         }
 
-        private static async Task<Bitmap?> getImageUrlBitmap(string url) {
+        private static async Task<Bitmap?> GetImageUrlBitmap(string url) {
             if (string.IsNullOrEmpty(url)) {
                 return null;
             }
 
             try {
                 using var client = new HttpClient() {
-                    DefaultRequestHeaders = {
-                        {"User-Agent", "Other"}
-                    },
-                    Timeout = TimeSpan.FromSeconds(30)
+                    Timeout = TimeSpan.FromSeconds(10)
                 };
                 var response = await client.GetByteArrayAsync(url);
 
