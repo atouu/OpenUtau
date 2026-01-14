@@ -84,7 +84,10 @@
 
       <Grid RowDefinitions="auto,*" IsEnabled="{Binding !SelectedSinger.IsInstalling}">
         <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10" Margin="0,0,0,10">
-          <Button Content="Back" Command="{Binding OnBack}" Margin="0" Padding="6,3" Height="NaN"/>
+          <Button VerticalAlignment="Center" Classes="clear" Content="Back" Command="{Binding OnBack}" Margin="0" Padding="3" Height="NaN">
+            <Path Height="18" Width="18" Fill="{Binding $parent.Foreground}"
+                  Data="M12.59.34c-.08 0-.12.04-.16.08l-7.2 7.2-.04.04-1.02 1.02-.04.04a.3.3 0 0 0-.08.2c0 .08.04.16.08.2l.04.04 1.02 1.02.04.04 7.2 7.2c.12.12.28.08.41-.04l1.02-1.14c.12-.12.12-.33.04-.41l-7.04-7 6.99-6.99c.12-.12.08-.28 0-.41L12.83.42c-.08-.08-.16-.08-.24-.08z"/>
+          </Button>
           <TextBlock Text="{Binding SelectedSinger.Names[en]}" FontSize="20" FontWeight="Bold"/>
           <TextBlock VerticalAlignment="Center" Text="{Binding SelectedSinger.Id, StringFormat='@{0}'}" FontSize="14" FontWeight="Thin"/>
         </StackPanel>

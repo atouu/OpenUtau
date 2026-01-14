@@ -15,7 +15,7 @@ namespace OpenUtau.App {
 
         public static async Task DownloadFile(string url, string dest, CancellationToken ct, IProgress<DownloadProgress>? progress = null) {
             try {
-                using var client = new HttpClient();
+                var client = new HttpClient();
                 using var response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
                 response.EnsureSuccessStatusCode();
 
@@ -28,8 +28,8 @@ namespace OpenUtau.App {
                 long totalRead = 0;
                 int read;
 
-                while ((read = await cs.ReadAsync(buffer, ct)) > 0) {
-                    await fs.WriteAsync(buffer.AsMemory(0, read), ct);
+                while ((read = await cs.ReadAsync(buffer, 0, buffer.Length, ct)) > 0) {
+                    await fs.WriteAsync(buffer, 0, read, ct);
                     totalRead += read;
                     progress?.Report(new DownloadProgress(totalRead, totalBytes));
                 }
@@ -43,17 +43,17 @@ namespace OpenUtau.App {
                 return false;
             }
 
-            using var client = new HttpClient();
-
+            var client = new HttpClient();
             var request = new HttpRequestMessage(HttpMethod.Head, url);
             HttpResponseMessage response = await client.SendAsync(request);
 
             var contentHeaders = response.Content.Headers;
 
-            return mimeTypes.Contains($"{contentHeaders.ContentType}");
+            return mimeTypes.Contains(contentHeaders.ContentType?.MediaType);
         }
 
         public static string HumanizeFileSize(double size) {
+            // From https://stackoverflow.com/a/4975942
             string[] suf = [ "B", "KB", "MB", "GB", "TB", "PB", "EB" ];
             if (size == 0) return "0" + suf[0];
             long bytes = (long) Math.Abs(size);

@@ -138,9 +138,9 @@ namespace OpenUtau.App.ViewModels {
 
             var progress = new Progress<DownloadProgress>(dp => {
                 Dispatcher.UIThread.InvokeAsync(() => {
-                    DownloadProgress = dp.BytesDownloaded * 100 / dp.TotalBytes;
                     DownloadCurrentSize = DownloadManager.HumanizeFileSize(dp.BytesDownloaded);
                     DownloadTotalSize = DownloadManager.HumanizeFileSize(dp.TotalBytes);
+                    DownloadProgress = dp.BytesDownloaded * 100 / dp.TotalBytes;
                 });
             });
 
@@ -154,10 +154,6 @@ namespace OpenUtau.App.ViewModels {
                     }
                 };
                 setup.Show();
-
-                setup.Closed += (s, e) => {
-                    File.Delete(dest);
-                };
             }
 
             IsDownloading = false;
