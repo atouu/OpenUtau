@@ -20,7 +20,7 @@
           <ComboBoxItem>Sort Z-A</ComboBoxItem>
         </ComboBox>
         <Panel Grid.Row="1" Grid.ColumnSpan="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-          <TextBlock Text="Indexing..." IsVisible="{Binding IsIndexing}"/>
+          <TextBlock Text="Indexing..." IsVisible="{Binding SingersFiltered, Converter={x:Static converters:ObjectConverters.IsNull}}"/>
         </Panel>
         <ScrollViewer Grid.Row="1" Grid.ColumnSpan="3">
         <ItemsControl ItemsSource="{Binding SingersFiltered}">
@@ -31,7 +31,7 @@
           </ItemsControl.ItemsPanel>
           <ItemsControl.ItemTemplate>
             <DataTemplate>
-              <Button Background="Transparent" CornerRadius="5" BorderThickness="1" BorderBrush="{DynamicResource BorderColor}"
+              <Button Classes="clear" CornerRadius="5" BorderThickness="1" BorderBrush="{DynamicResource BorderColor}"
                       Padding="15" Height="NaN" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
                       Command="{Binding $parent[ItemsControl].DataContext.OnSelectedSinger}" CommandParameter="{Binding}">
                 <StackPanel Spacing="8">

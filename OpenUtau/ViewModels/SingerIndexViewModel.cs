@@ -70,7 +70,6 @@ namespace OpenUtau.App.ViewModels {
         [Reactive] public IEnumerable<SingerEntry>? SingersFiltered { get; set; }
         [Reactive] public SingerEntry? SelectedSinger { get; set; }
         [Reactive] public string Search { get; set; }
-        [Reactive] public bool IsIndexing { get; set; }
         [Reactive] public int Page { get; set; }
         [Reactive] public int Sorting { get; set; }
 
@@ -86,11 +85,9 @@ namespace OpenUtau.App.ViewModels {
             DownloadVariant = new();
             Search = string.Empty;
 
-            Task.Run(async () => {
-                IsIndexing = true;
-                singers = await SyncVoicebanks();
+            SyncVoicebanks().ContinueWith(s => {
+                singers = s.Result;
                 SingersFiltered = singers;
-                IsIndexing = false;
             });
 
             this.WhenAnyValue(vm => vm.Sorting)
@@ -192,7 +189,7 @@ namespace OpenUtau.App.ViewModels {
                 }
             }
 
-            return [.. entries.Where(v => v.AllTags.Any(t => SingerTagFilters.Contains(t))).OrderBy(v => v.AltNames)];
+            return [.. entries.Where(v => v.AllTags.Any(t => SingerTagFilters.Contains(t))).OrderBy(v => v.Names["en"])];
         }
 
         private static async Task<Bitmap?> GetImageUrlBitmap(string url) {
