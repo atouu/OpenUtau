@@ -4,14 +4,14 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ${{ matrix.arch.runs-on }}
 
     strategy:
       fail-fast: false
       matrix:
         arch:
           - { name: win, runs-on: windows-latest }
-          - { name: osx, runs-on: macos-13 }
+          - { name: mac, runs-on: macos-13 }
           - { name: linux, runs-on: ubuntu-latest }
 
     steps:
