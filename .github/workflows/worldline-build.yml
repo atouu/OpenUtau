@@ -1,0 +1,25 @@
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bazel-contrib/setup-bazel@0.18.0
+        with:
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}
+          repository-cache: true
+      - name: Remove old runtimes
+        run: rm -r runtimes
+      - name: Build Worldline Windows
+        working-directory: cpp
+        shell: cmd
+        run: ./build_win.bat
+      - uses: actions/upload-artifact@v4
+        with:
+          name: worldline-win
+          path: runtimes
