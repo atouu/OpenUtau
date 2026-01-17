@@ -25,16 +25,25 @@ jobs:
       - name: Remove old runtimes
         run: rm -r runtimes
 
-      - name: Build Worldline
-        working-directory: cpp
-        run: bash ./build_${{ matrix.arch.name }}.sh
-        if: ${{ matrix.arch.name != 'win' }}
-
       - name: Build Worldline (Windows)
         working-directory: cpp
         shell: cmd
         run: ./build_win.bat
         if: ${{ matrix.arch.name == 'win' }}
+
+      - name: Build Worldline (Linux)
+        working-directory: cpp
+        run: |
+          sudo apt-get install gcc-arm-linux-gnueabi g++-arm-linux-gnueabi binutils-arm-linux-gnueabi
+          sudo apt-get install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu
+          bash ./build_linux.sh
+        if: ${{ matrix.arch.name == 'win' }}
+
+      - name: Build Worldline (Mac)
+        working-directory: cpp
+        run: bash ./build_mac.sh
+        if: ${{ matrix.arch.name == 'win' }}
+
 
       - uses: actions/upload-artifact@v4
         with:
