@@ -11,7 +11,7 @@ jobs:
       matrix:
         arch:
           - { name: win, runs-on: windows-latest }
-          - { name: mac, runs-on: macos-13 }
+          - { name: mac, runs-on: macos-15-intel }
           - { name: linux, runs-on: ubuntu-latest }
 
     steps:
@@ -21,17 +21,21 @@ jobs:
           bazelisk-cache: true
           disk-cache: ${{ github.workflow }}
           repository-cache: true
+
       - name: Remove old runtimes
         run: rm -r runtimes
+
       - name: Build Worldline
         working-directory: cpp
         run: ./build_${{ matrix.arch.name }}.sh
         if: ${{ matrix.arch.name != 'win' }}
+
       - name: Build Worldline (Windows)
         working-directory: cpp
         shell: cmd
         run: ./build_win.bat
         if: ${{ matrix.arch.name == 'win' }}
+
       - uses: actions/upload-artifact@v4
         with:
           name: worldline-${{ matrix.arch.name }}
