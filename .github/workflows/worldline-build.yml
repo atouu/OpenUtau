@@ -6,6 +6,14 @@ jobs:
   build:
     runs-on: windows-latest
 
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - { name: win, runs-on: windows-latest }
+          - { name: osx, runs-on: macos-13 }
+          - { name: linux, runs-on: ubuntu-latest }
+
     steps:
       - uses: actions/checkout@v4
       - uses: bazel-contrib/setup-bazel@0.18.0
@@ -15,11 +23,16 @@ jobs:
           repository-cache: true
       - name: Remove old runtimes
         run: rm -r runtimes
-      - name: Build Worldline Windows
+      - name: Build Worldline
+        working-directory: cpp
+        run: ./build_${{ matrix.arch.name }}.sh
+        if: ${{ matrix.arch.name != 'win' }}
+      - name: Build Worldline (Windows)
         working-directory: cpp
         shell: cmd
         run: ./build_win.bat
+        if: ${{ matrix.arch.name == 'win' }}
       - uses: actions/upload-artifact@v4
         with:
-          name: worldline-win
+          name: worldline-${{ matrix.arch.name }}
           path: runtimes
