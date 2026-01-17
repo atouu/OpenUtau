@@ -27,7 +27,7 @@ jobs:
 
       - name: Build Worldline
         working-directory: cpp
-        run: ./build_${{ matrix.arch.name }}.sh
+        run: bash ./build_${{ matrix.arch.name }}.sh
         if: ${{ matrix.arch.name != 'win' }}
 
       - name: Build Worldline (Windows)
