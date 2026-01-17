@@ -13,4 +13,4 @@ copy bazel-bin\worldline\worldline.dll ..\runtimes\%~1\native
 :MAIN
 @call :BUILD win-x64 x64_windows "/arch:SSE2"
 @call :BUILD win-x86 x64_x86_windows "/arch:SSE2"
-@call :BUILD win-arm64 arm64_windows ""
+@call :BUILD win-arm64 arm64_windows
