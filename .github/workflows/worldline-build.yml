@@ -32,7 +32,6 @@ jobs:
         run: |
           sudo apt-get install gcc-arm-linux-gnueabi g++-arm-linux-gnueabi binutils-arm-linux-gnueabi
           sudo apt-get install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu
-          ls -R /usr/lib/gcc-cross/ 
           bash ./build_linux.sh
         if: ${{ matrix.arch.name == 'linux' }}
 
@@ -40,7 +39,6 @@ jobs:
         working-directory: cpp
         run: bash ./build_mac.sh
         if: ${{ matrix.arch.name == 'mac' }}
-
 
       - uses: actions/upload-artifact@v4
         with:
