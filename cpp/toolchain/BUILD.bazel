@@ -28,7 +28,7 @@ cc_toolchain_config(
     name = "aarch64_toolchain_config",
     cxx_builtin_include_directories = [
         "/usr/aarch64-linux-gnu/include",
-        "/usr/lib/gcc-cross/aarch64-linux-gnu/13/include",
+        "/usr/lib/gcc-cross/aarch64-linux-gnu/11/include",
     ],
     target_cpu = "aarch64",
     tool_path_prefx = "/usr/bin/aarch64-linux-gnu-",
