@@ -44,3 +44,19 @@ jobs:
         with:
           name: worldline-${{ matrix.arch.name }}
           path: runtimes
+
+  push:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v5
+        with:
+          artifact-ids: worldline-win,worldline-mac,wordline-linux
+          path: runtimes
+          merge-multiple: true
+      - name: Display structure of downloaded files
+        run: ls -R runtimes
+    
