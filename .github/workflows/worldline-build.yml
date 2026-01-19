@@ -12,7 +12,7 @@ jobs:
         arch:
           - { name: win, runs-on: windows-latest }
           - { name: mac, runs-on: macos-15-intel }
-          - { name: linux, runs-on: ubuntu-latest }
+          - { name: linux, runs-on: ubuntu-22.04 }
 
     steps:
       - uses: actions/checkout@v4
