@@ -45,8 +45,11 @@ jobs:
           name: worldline-${{ matrix.arch.name }}
           path: runtimes
 
-  push:
+  pull-request:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     needs: build
     steps:
       - uses: actions/checkout@v4
@@ -59,4 +62,11 @@ jobs:
           merge-multiple: true
       - name: Display structure of downloaded files
         run: ls -R runtimes
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "Rebuild Worldline"
+          branch: rebuild-worldline
+          title: "Rebuild Worldline"
+          add-paths: runtimes
     
