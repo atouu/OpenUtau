@@ -54,7 +54,7 @@ jobs:
       - name: Download Artifacts
         uses: actions/download-artifact@v5
         with:
-          artifact-ids: worldline-win,worldline-mac,wordline-linux
+          pattern: worldline-*
           path: runtimes
           merge-multiple: true
       - name: Display structure of downloaded files
