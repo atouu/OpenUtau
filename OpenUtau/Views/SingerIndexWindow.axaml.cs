@@ -14,7 +14,7 @@ namespace OpenUtau.App.Views {
                 d(ViewModel
                     .DownloadVariant
                     .RegisterHandler(async interaction => {
-                        this.IsEnabled = false;
+                        IsEnabled = false;
                         var variant = interaction.Input;
                         bool isDirectDownload = await variant.IsValidDirectDownload;
                         bool output = false;
@@ -38,7 +38,7 @@ namespace OpenUtau.App.Views {
                         }
 
                         interaction.SetOutput(output);
-                        this.IsEnabled = true;
+                        IsEnabled = true;
                     }));
             });
         }

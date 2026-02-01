@@ -110,10 +110,7 @@ namespace OpenUtau.App.ViewModels {
         }
 
         public void OnSelectedSinger(object singer) {
-            if (SelectedSinger != singer) {
-                SelectedSinger = null;
-                SelectedSinger = (SingerEntry) singer;
-            }
+            SelectedSinger = singer as SingerEntry;
             Page = 1;
         }
 
@@ -138,7 +135,7 @@ namespace OpenUtau.App.ViewModels {
                     DownloadCurrentSize = DownloadManager.HumanizeFileSize(dp.BytesDownloaded);
                     DownloadTotalSize = DownloadManager.HumanizeFileSize(dp.TotalBytes);
                     DownloadProgress = dp.BytesDownloaded * 100 / dp.TotalBytes;
-                });
+                }, DispatcherPriority.Background);
             });
 
             await DownloadManager.DownloadFile(
@@ -173,16 +170,17 @@ namespace OpenUtau.App.ViewModels {
 
             var responses = requests.Select(task => task.Result);
 
+            var settings = new JsonSerializerSettings() {
+                ContractResolver = new DefaultContractResolver() {
+                    NamingStrategy = new SnakeCaseNamingStrategy()
+                }
+            };
+
             foreach (var response in responses) {
                 var body = await response.Content.ReadAsStringAsync();
                 if (!response.IsSuccessStatusCode) {
                     continue;
                 }
-                var settings = new JsonSerializerSettings() {
-                    ContractResolver = new DefaultContractResolver() {
-                        NamingStrategy = new SnakeCaseNamingStrategy()
-                    }
-                };
                 var vbs = JsonConvert.DeserializeObject<List<SingerEntry>>(body, settings);
                 if (vbs != null) {
                     entries.AddRange(vbs);
