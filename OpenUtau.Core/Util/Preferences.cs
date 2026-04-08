@@ -242,6 +242,8 @@ errors.txt
 ";
             public string RecoveryPath = string.Empty;
             public bool DetachPianoRoll = false;
+            public int PortraitHeightCap = 100;
+            public int PortraitPosition = 50;
         }
     }
 }

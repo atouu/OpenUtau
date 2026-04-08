@@ -256,10 +256,16 @@
             <TextBlock Text="{DynamicResource prefs.appearance.showportrait}" HorizontalAlignment="Left"/>
             <ToggleSwitch IsChecked="{Binding ShowPortrait}"/>
           </Grid>
-          <Grid Margin="0,5,0,0" ColumnDefinitions="Auto,8,24,8,*">
-            <TextBlock Grid.Column="0" Text="Potrait size cap (window height %)" HorizontalAlignment="Left"/>
-            <TextBlock Grid.Column="2" Text="{Binding PortraitHeightCap}" HorizontalAlignment="Center" />
+          <Grid Margin="0,5,0,0" ColumnDefinitions="Auto,*,40,8,125">
+            <TextBlock Grid.Column="0" Text="Default portrait height cap" HorizontalAlignment="Left"/>
+            <TextBlock Grid.Column="2" Text="{Binding PortraitHeightCap, StringFormat='{}{0}%'}" HorizontalAlignment="Center" />
             <Slider Grid.Column="4" Classes="fader" Value="{Binding PortraitHeightCap}" Minimum="1" Maximum="100"
+                    IsEnabled="{Binding ShowPortrait}"/>
+          </Grid>
+          <Grid Margin="0,5,0,0" ColumnDefinitions="Auto,*,40,8,125">
+            <TextBlock Grid.Column="0" Text="Default portrait position" HorizontalAlignment="Left"/>
+            <TextBlock Grid.Column="2" Text="{Binding PortraitPosition, StringFormat='{}{0}%'}" HorizontalAlignment="Center" />
+            <Slider Grid.Column="4" Classes="fader" Value="{Binding PortraitPosition}" Minimum="0" Maximum="100"
                     IsEnabled="{Binding ShowPortrait}"/>
           </Grid>
           <Grid Margin="0,5,0,0">

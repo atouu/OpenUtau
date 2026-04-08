@@ -87,6 +87,9 @@ namespace OpenUtau.App.ViewModels {
         [Reactive] public Bitmap? Avatar { get; set; }
         [Reactive] public Bitmap? Portrait { get; set; }
         [Reactive] public IBrush? PortraitMask { get; set; }
+        [Reactive] public Rect PortraitCanvasBounds { get; set; }
+        [Reactive] public double PortraitHeight { get; set; }
+        [Reactive] public double PortraitPosition { get; set; }
         [Reactive] public string WindowTitle { get; set; } = "Piano Roll";
         [Reactive] public SolidColorBrush TrackAccentColor { get; set; } = ThemeManager.GetTrackColor("Blue").AccentColor;
         public double ViewportTicks => viewportTicks.Value;
@@ -146,6 +149,8 @@ namespace OpenUtau.App.ViewModels {
             smallChangeY = this.WhenAnyValue(x => x.ViewportTracks)
                 .Select(h => h / 8)
                 .ToProperty(this, x => x.SmallChangeY);
+            this.WhenAnyValue(x => x.PortraitCanvasBounds)
+                .Subscribe(UpdatePortraitHeight);
             this.WhenAnyValue(x => x.Bounds)
                 .Subscribe(_ => {
                     OnXZoomed(new Point(), 0);
@@ -315,6 +320,9 @@ namespace OpenUtau.App.ViewModels {
                             break;
                         case "Portrait":
                             LoadPortrait(Part, Project);
+                            goto case "PortraitHeight";
+                        case "PortraitHeight":
+                            UpdatePortraitHeight(PortraitCanvasBounds);
                             break;
                         case "TrackColor":
                             LoadTrackColor(Part, Project);
@@ -330,6 +338,14 @@ namespace OpenUtau.App.ViewModels {
                 .Subscribe(e => {
                     DocManager.Inst.NotesClipboard?.Clear();
                 });
+        }
+
+        private void UpdatePortraitHeight(Rect bounds) {
+            if (Preferences.Default.ShowPortrait) {
+                double heightCap = bounds.Height * Preferences.Default.PortraitHeightCap / 100;
+                PortraitPosition = (bounds.Height - heightCap) * Preferences.Default.PortraitPosition / 100;
+                PortraitHeight = heightCap;
+            }
         }
 
         private void UpdateSnapDiv() {

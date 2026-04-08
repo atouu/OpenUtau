@@ -98,6 +98,7 @@ namespace OpenUtau.App.ViewModels {
         [Reactive] public bool UseTrackColor { get; set; }
         [Reactive] public bool ShowPortrait { get; set; }
         [Reactive] public int PortraitHeightCap { get; set; }
+        [Reactive] public int PortraitPosition { get; set; }
         [Reactive] public bool ShowIcon { get; set; }
         [Reactive] public bool ShowGhostNotes { get; set; }
         [Reactive] public bool ThemeEditable { get; set; }
@@ -190,6 +191,8 @@ namespace OpenUtau.App.ViewModels {
             RememberUst = Preferences.Default.RememberUst;
             RememberVsqx = Preferences.Default.RememberVsqx;
             ClearCacheOnQuit = Preferences.Default.ClearCacheOnQuit;
+            PortraitHeightCap = Preferences.Default.PortraitHeightCap;
+            PortraitPosition = Preferences.Default.PortraitPosition;
 
             MessageBus.Current.Listen<ThemeEditorStateChangedEvent>()
                 .Subscribe(_ => this.RaisePropertyChanged(nameof(IsThemeEditorOpen)));
@@ -283,6 +286,18 @@ namespace OpenUtau.App.ViewModels {
                     Preferences.Default.ShowPortrait = showPortrait;
                     Preferences.Save();
                     MessageBus.Current.SendMessage(new PianorollRefreshEvent("Portrait"));
+                });
+            this.WhenAnyValue(vm => vm.PortraitHeightCap)
+                .Subscribe(portraitHeightCap => {
+                    Preferences.Default.PortraitHeightCap = portraitHeightCap;
+                    Preferences.Save();
+                    MessageBus.Current.SendMessage(new PianorollRefreshEvent("PortraitHeight"));
+                });
+            this.WhenAnyValue(vm => vm.PortraitPosition)
+                .Subscribe(portraitPosition => {
+                    Preferences.Default.PortraitPosition = portraitPosition;
+                    Preferences.Save();
+                    MessageBus.Current.SendMessage(new PianorollRefreshEvent("PortraitHeight"));
                 });
             this.WhenAnyValue(vm => vm.ShowIcon)
                 .Subscribe(showIcon => {
