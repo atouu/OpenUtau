@@ -345,9 +345,11 @@ namespace OpenUtau.App.ViewModels {
         }
 
         private void UpdatePortraitHeight(Rect bounds) {
-            if (Preferences.Default.ShowPortrait) {
-                double heightCap = bounds.Height * Preferences.Default.PortraitHeightCap / 100;
-                PortraitPosition = (bounds.Height - heightCap) * Preferences.Default.PortraitPosition / 100;
+            if (Preferences.Default.ShowPortrait && Singer != null) {
+                int cap = Singer.PortraitHeightCap <= 0 ? Preferences.Default.PortraitHeightCap : Singer.PortraitHeightCap;
+                double heightCap = bounds.Height * cap / 100;
+                int pos = Singer.PortraitPosition <= 0 ? Preferences.Default.PortraitPosition : Singer.PortraitPosition;
+                PortraitPosition = (bounds.Height - heightCap) * pos / 100;
                 PortraitHeight = heightCap;
             }
         }
@@ -582,6 +584,7 @@ namespace OpenUtau.App.ViewModels {
                         }
                     }
                 });
+                UpdatePortraitHeight(PortraitCanvasBounds);
             }
         }
         private void LoadWindowTitle(UPart? part, UProject? project) {

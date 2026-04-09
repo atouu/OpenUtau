@@ -19,8 +19,10 @@ namespace OpenUtau.Core.Vogen {
         public string voiceBy;
         public string avatar;
         public string portrait;
-        public float portraitOpacity = 0.67f;
+        public float portraitOpacity = 0;
         public int portraitHeight = 0;
+        public int portraitHeightCap = 0;
+        public int portraitPosition = 0;
         public string web;
         public string misc;
     }
