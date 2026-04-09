@@ -244,6 +244,7 @@ errors.txt
             public bool DetachPianoRoll = false;
             public int PortraitHeightCap = 100;
             public int PortraitPosition = 50;
+            public float PortraitOpacity = 0.67f;
         }
     }
 }

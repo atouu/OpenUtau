@@ -99,6 +99,7 @@ namespace OpenUtau.App.ViewModels {
         [Reactive] public bool ShowPortrait { get; set; }
         [Reactive] public int PortraitHeightCap { get; set; }
         [Reactive] public int PortraitPosition { get; set; }
+        [Reactive] public float PortraitOpacity { get; set; }
         [Reactive] public bool ShowIcon { get; set; }
         [Reactive] public bool ShowGhostNotes { get; set; }
         [Reactive] public bool ThemeEditable { get; set; }
@@ -193,6 +194,7 @@ namespace OpenUtau.App.ViewModels {
             ClearCacheOnQuit = Preferences.Default.ClearCacheOnQuit;
             PortraitHeightCap = Preferences.Default.PortraitHeightCap;
             PortraitPosition = Preferences.Default.PortraitPosition;
+            PortraitOpacity = Preferences.Default.PortraitOpacity;
 
             MessageBus.Current.Listen<ThemeEditorStateChangedEvent>()
                 .Subscribe(_ => this.RaisePropertyChanged(nameof(IsThemeEditorOpen)));
@@ -298,6 +300,12 @@ namespace OpenUtau.App.ViewModels {
                     Preferences.Default.PortraitPosition = portraitPosition;
                     Preferences.Save();
                     MessageBus.Current.SendMessage(new PianorollRefreshEvent("PortraitHeight"));
+                });
+            this.WhenAnyValue(vm => vm.PortraitOpacity)
+                .Subscribe(portraitOpacity => {
+                    Preferences.Default.PortraitOpacity = portraitOpacity;
+                    Preferences.Save();
+                    MessageBus.Current.SendMessage(new PianorollRefreshEvent("PortraitOpacity"));
                 });
             this.WhenAnyValue(vm => vm.ShowIcon)
                 .Subscribe(showIcon => {

@@ -99,6 +99,7 @@ namespace OpenUtau.App.ViewModels {
         public double HScrollBarMax => Math.Max(0, TickCount - ViewportTicks);
         public double VScrollBarMax => Math.Max(0, TrackCount - ViewportTracks);
         public UProject Project => DocManager.Inst.Project;
+        public USinger? Singer => Part != null ? Project.tracks[Part.trackNo].Singer : null;
         [Reactive] public List<MenuItemViewModel> SnapDivs { get; set; }
         [Reactive] public List<MenuItemViewModel> Keys { get; set; }
 
@@ -320,9 +321,12 @@ namespace OpenUtau.App.ViewModels {
                             break;
                         case "Portrait":
                             LoadPortrait(Part, Project);
-                            goto case "PortraitHeight";
+                            break;
                         case "PortraitHeight":
                             UpdatePortraitHeight(PortraitCanvasBounds);
+                            break;
+                        case "PortraitOpacity":
+                            UpdatePortraitOpacity();
                             break;
                         case "TrackColor":
                             LoadTrackColor(Part, Project);
@@ -345,6 +349,12 @@ namespace OpenUtau.App.ViewModels {
                 double heightCap = bounds.Height * Preferences.Default.PortraitHeightCap / 100;
                 PortraitPosition = (bounds.Height - heightCap) * Preferences.Default.PortraitPosition / 100;
                 PortraitHeight = heightCap;
+            }
+        }
+
+        private void UpdatePortraitOpacity() {
+            if (Singer?.PortraitOpacity <= 0) {
+                PortraitMask = new SolidColorBrush(Avalonia.Media.Colors.White, Preferences.Default.PortraitOpacity);
             }
         }
 
@@ -547,7 +557,10 @@ namespace OpenUtau.App.ViewModels {
                     Portrait = null;
                     portraitSource = null;
                 }
-                PortraitMask = new SolidColorBrush(Avalonia.Media.Colors.White, singer.PortraitOpacity);
+                var opacity = singer.PortraitOpacity <= 0
+                    ? Preferences.Default.PortraitOpacity
+                    : singer.PortraitOpacity;
+                PortraitMask = new SolidColorBrush(Avalonia.Media.Colors.White, opacity);
                 Task.Run(() => {
                     lock (portraitLock) {
                         try {
