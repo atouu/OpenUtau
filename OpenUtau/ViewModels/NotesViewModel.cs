@@ -346,9 +346,9 @@ namespace OpenUtau.App.ViewModels {
 
         private void UpdatePortraitHeight(Rect bounds) {
             if (Preferences.Default.ShowPortrait && Singer != null) {
-                int cap = Singer.PortraitHeightCap <= 0 ? Preferences.Default.PortraitHeightCap : Singer.PortraitHeightCap;
+                int cap = Singer.PortraitHeightCap > 0 ? Singer.PortraitHeightCap : Preferences.Default.PortraitHeightCap;
                 double heightCap = bounds.Height * cap / 100;
-                int pos = Singer.PortraitPosition <= 0 ? Preferences.Default.PortraitPosition : Singer.PortraitPosition;
+                int pos = Singer.PortraitPosition > -1 ? Singer.PortraitPosition : Preferences.Default.PortraitPosition;
                 PortraitPosition = (bounds.Height - heightCap) * pos / 100;
                 PortraitHeight = heightCap;
             }

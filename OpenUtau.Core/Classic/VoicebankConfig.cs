@@ -42,10 +42,10 @@ namespace OpenUtau.Classic {
         public string TextFileEncoding;
         public string Image;
         public string Portrait;
-        public float PortraitOpacity = 0;
         public int PortraitHeight = 0;
+        public float PortraitOpacity = 0;
         public int PortraitHeightCap = 0;
-        public int PortraitPosition = 0;
+        public int PortraitPosition = -1;
         public string Author;
         public string Voice;
         public string Web;
