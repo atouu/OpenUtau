@@ -1,0 +1,48 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" MinWidth="400" Width="400" Height="400"
+        x:Class="OpenUtauDRPC.Views.PreferencesDialog"
+        Title="Discord Preferences">
+    <Grid RowDefinitions="auto,auto,auto,*" Margin="5">
+        <TextBlock Grid.Row="0" Margin="0,0,0,5" Text="Application ID (Needs Restart)"/>
+        <TextBox Grid.Row="1" Margin="0,0,0,5" Text="{Binding ApplicationId}"/>
+        <Panel Grid.Row="2" Margin="0,0,0,5">
+            <TextBlock Text="Singer Icons" VerticalAlignment="Center"/>
+            <Button HorizontalAlignment="Right" Content="Add Icon">
+                <Button.Flyout>
+                    <Flyout Placement="BottomEdgeAlignedRight">
+                        <Grid RowDefinitions="auto,auto,auto" ColumnDefinitions="auto,*" Width="200">
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Singer: " VerticalAlignment="Center"/>
+                            <ComboBox Grid.Row="0" Grid.Column="1" ItemsSource="{Binding Singers}" HorizontalAlignment="Stretch" SelectedItem="{Binding SelectedSinger}"/>
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Icon URL: " VerticalAlignment="Center"/>
+                            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding SelectedSingerIconUrl}"/>
+                            <Button Grid.Row="2" Grid.ColumnSpan="2" HorizontalAlignment="Stretch" Content="Add" Command="{Binding Add}"/>
+                        </Grid>
+                    </Flyout>
+                </Button.Flyout>
+            </Button>
+        </Panel>
+        <ScrollViewer Grid.Row="3">
+            <ItemsControl ItemsSource="{Binding SingerIconUrls}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border BorderThickness="1" BorderBrush="Gray" Padding="5" Margin="0,0,0,5" Background="Transparent">
+                            <Grid RowDefinitions="auto,auto" ColumnDefinitions="*,5,auto">
+                                <TextBlock Grid.Row="0" Text="{Binding Key}"/>
+                                <HyperlinkButton Grid.Row="1" NavigateUri="{Binding Value}" Padding="0">
+                                    <HyperlinkButton.Content>
+                                        <TextBlock Grid.Row="1" Text="{Binding Value}" FontWeight="Light"/>
+                                    </HyperlinkButton.Content>
+                                </HyperlinkButton>
+                                <Button Grid.Column="2" Grid.RowSpan="2"
+                                    Content="Delete" Command="{Binding $parent[ItemsControl].DataContext.Delete}" CommandParameter="{Binding Key}"/>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+    </Grid>
+</Window>

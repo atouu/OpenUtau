@@ -1,22 +1,15 @@
 using DiscordRPC;
 using OpenUtau.Core;
-using OpenUtau.Core.Util;
+using OpenUtau.Core.Ustx;
 
 namespace OpenUtauDRPC {
     public class UDiscordRPC : ICmdSubscriber {
 
+        private int currentTrack = -1;
         public DiscordRpcClient client;
 
         public UDiscordRPC() {
-            client = new DiscordRpcClient(Preferences.Default.ApplicationId) {
-                Logger = new DiscordRPC.Logging.ConsoleLogger(DiscordRPC.Logging.LogLevel.Info, true)
-            };
-
-            client.OnReady += (sender, e) => {
-                Console.WriteLine("Connected to discord with user {0}", e.User.Username);
-                Console.WriteLine("Avatar: {0}", e.User.GetAvatarURL(User.AvatarFormat.WebP));
-                Console.WriteLine("Decoration: {0}", e.User.GetAvatarDecorationURL());
-            };
+            client = new DiscordRpcClient(Preferences.Default.ApplicationId);
 
             client.Initialize();
 
@@ -27,25 +20,44 @@ namespace OpenUtauDRPC {
                 }
             });
 
-            DocManager.Inst.AddSubscriber(this);
+            UpdateProject(DocManager.Inst.Project);
+        }
+
+        private void UpdateSinger(string singerName) {
+            if (!string.IsNullOrEmpty(singerName)
+                && Preferences.Default.SingerIconUrls.TryGetValue(singerName, out var iconUrl)) {
+                client.UpdateSmallAsset(iconUrl, singerName);
+            } else {
+                client.UpdateSmallAsset($"https://raw.githubusercontent.com/stakira/OpenUtau/refs/heads/pages/docs/assets/images/openutau.png", singerName);
+            }
+        }
+
+        private void UpdateProject(UProject project) {
+            string projectName = Path.GetFileName(project.FilePath);
+            if (string.IsNullOrEmpty(projectName)) {
+                projectName = project.name;
+            }
+            client.UpdateDetails($"In Project: {projectName}");
+        }
+
+        private void ClearStatus() {
+            client.UpdateState(null);
+            client.UpdateSmallAsset();
         }
 
         public void OnNext(UCommand cmd, bool isUndo) {
             if (cmd is LoadPartNotification loadPart) {
-                client.UpdateState($"Editing Track {loadPart.part.trackNo + 1} - {loadPart.part.name}");
-                string? trackSinger = loadPart.project.tracks[loadPart.part.trackNo].Singer?.Name;
-                if (!string.IsNullOrEmpty(trackSinger)
-                    && Preferences.Default.SingerIconUrls.TryGetValue(trackSinger, out var iconUrl)) {
-                    client.UpdateSmallAsset(iconUrl, trackSinger);
-                } else {
-                    client.UpdateSmallAsset("https://raw.githubusercontent.com/stakira/OpenUtau/refs/heads/pages/docs/assets/images/openutau.png", trackSinger);
+                currentTrack = loadPart.part.trackNo;
+                client.UpdateState($"Editing Track {currentTrack + 1} - {loadPart.part.name}");
+                string trackSinger = loadPart.project.tracks[currentTrack].Singer.Name;
+                UpdateSinger(trackSinger);
+            } else if (cmd is TrackChangeSingerCommand singerChange) {
+                if (currentTrack != -1 && currentTrack == singerChange.track.TrackNo) {
+                    UpdateSinger(singerChange.track.Singer.Name);
                 }
             } else if (cmd is LoadProjectNotification loadProject) {
-                string projectName = Path.GetFileName(loadProject.project.FilePath);
-                if (string.IsNullOrEmpty(projectName)) {
-                    projectName = loadProject.project.name;
-                }
-                client.UpdateDetails($"In Project: {projectName}");
+                UpdateProject(loadProject.project);
+                ClearStatus();
             }
         }
     }

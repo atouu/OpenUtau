@@ -8,7 +8,7 @@ namespace OpenUtauDRPC {
     public static class Preferences {
         public static SerializablePreferences Default;
         public static readonly string preferencePath =
-            Path.Join(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "oudrpc-prefs.json");
+            Path.Join(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "discord-prefs.json");
 
         static Preferences() {
             Load();
