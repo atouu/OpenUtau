@@ -49,8 +49,12 @@ namespace OpenUtauDRPC {
             if (cmd is LoadPartNotification loadPart) {
                 currentTrack = loadPart.part.trackNo;
                 client.UpdateState($"Editing Track {currentTrack + 1} - {loadPart.part.name}");
-                string trackSinger = loadPart.project.tracks[currentTrack].Singer.Name;
-                UpdateSinger(trackSinger);
+                string trackSinger = loadPart.project.tracks[currentTrack].Singer?.Name;
+                if (string.IsNullOrEmpty(trackSinger)) {
+                    client.UpdateSmallAsset();
+                } else {
+                    UpdateSinger(trackSinger);
+                }
             } else if (cmd is TrackChangeSingerCommand singerChange) {
                 if (currentTrack != -1 && currentTrack == singerChange.track.TrackNo) {
                     UpdateSinger(singerChange.track.Singer.Name);
