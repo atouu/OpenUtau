@@ -8,12 +8,10 @@
 
   <ItemGroup>
     <PackageReference Include="DiscordRichPresence" Version="1.6.1.70" />
-    <PackageReference Include="Avalonia" Version="11.2.4" />
-    <PackageReference Include="Avalonia.ReactiveUI" Version="11.2.4" />
-    <PackageReference Include="ReactiveUI.Fody" Version="19.5.41" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\OpenUtau\OpenUtau.csproj" />
     <ProjectReference Include="..\OpenUtau.Core\OpenUtau.Core.csproj" />
   </ItemGroup>
 
