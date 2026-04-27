@@ -17,18 +17,34 @@ namespace OpenUtauDRPC {
                 Assets = new Assets() {
                     LargeImageKey = "https://raw.githubusercontent.com/stakira/OpenUtau/refs/heads/pages/docs/assets/images/openutau.png",
                     LargeImageText = "OpenUtau"
-                }
+                },
+                Buttons = [
+                    new() { Label = "Visit OpenUtau", Url = "https://openutau.com/" }
+                ]
             });
 
             UpdateProject(DocManager.Inst.Project);
         }
 
-        private void UpdateSinger(string singerName) {
-            if (!string.IsNullOrEmpty(singerName)
-                && Preferences.Default.SingerIconUrls.TryGetValue(singerName, out var iconUrl)) {
-                client.UpdateSmallAsset(iconUrl, singerName);
+        private void UpdateSinger(USinger singer) {
+            if (Preferences.Default.SingerIconUrls.TryGetValue(singer.Name, out var iconUrl)) {
+                client.UpdateSmallAsset(iconUrl, singer.Name);
             } else {
-                client.UpdateSmallAsset($"https://raw.githubusercontent.com/stakira/OpenUtau/refs/heads/pages/docs/assets/images/openutau.png", singerName);
+                client.UpdateSmallAsset("https://raw.githubusercontent.com/stakira/OpenUtau/refs/heads/pages/docs/assets/images/openutau.png", singer.Name);
+            }
+            UpdateSingerButton(singer.Web);
+        }
+
+        private void UpdateSingerButton(string site) {
+            if (string.IsNullOrEmpty(site)) {
+                client.UpdateButtons([
+                    new() { Label = "Visit OpenUtau", Url = "https://openutau.com/" }
+                ]);
+            } else {
+                client.UpdateButtons([
+                    new() { Label = "Visit OpenUtau", Url = "https://openutau.com/" },
+                    new() { Label = "Visit Singer Website", Url = site }
+                ]);
             }
         }
 
@@ -40,28 +56,24 @@ namespace OpenUtauDRPC {
             client.UpdateDetails($"In Project: {projectName}");
         }
 
-        private void ClearStatus() {
-            client.UpdateState(null);
-            client.UpdateSmallAsset();
-        }
-
         public void OnNext(UCommand cmd, bool isUndo) {
             if (cmd is LoadPartNotification loadPart) {
                 currentTrack = loadPart.part.trackNo;
                 client.UpdateState($"Editing Track {currentTrack + 1} - {loadPart.part.name}");
-                string trackSinger = loadPart.project.tracks[currentTrack].Singer?.Name;
-                if (string.IsNullOrEmpty(trackSinger)) {
-                    client.UpdateSmallAsset();
+                USinger trackSinger = loadPart.project.tracks[currentTrack].Singer;
+                if (string.IsNullOrEmpty(trackSinger.Name)) {
+                    client.UpdateSmallAsset(string.Empty);
                 } else {
                     UpdateSinger(trackSinger);
                 }
             } else if (cmd is TrackChangeSingerCommand singerChange) {
                 if (currentTrack != -1 && currentTrack == singerChange.track.TrackNo) {
-                    UpdateSinger(singerChange.track.Singer.Name);
+                    UpdateSinger(singerChange.track.Singer);
                 }
             } else if (cmd is LoadProjectNotification loadProject) {
                 UpdateProject(loadProject.project);
-                ClearStatus();
+                client.UpdateState(null);
+                client.UpdateSmallAsset(string.Empty);
             }
         }
     }
