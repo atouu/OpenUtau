@@ -41,9 +41,10 @@ namespace OpenUtauDRPC {
                     new() { Label = "Visit OpenUtau", Url = "https://openutau.com/" }
                 ]);
             } else {
+
                 client.UpdateButtons([
                     new() { Label = "Visit OpenUtau", Url = "https://openutau.com/" },
-                    new() { Label = "Visit Singer Website", Url = site }
+                    new() { Label = "Visit Singer Website", Url = $"{new UriBuilder(site).Uri}" }
                 ]);
             }
         }
