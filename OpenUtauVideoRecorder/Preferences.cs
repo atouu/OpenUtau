@@ -50,7 +50,7 @@ namespace OpenUtauVideoRecorder {
         [Serializable]
         public class SerializablePreferences {
             public string FFMpegPath = string.Empty;
-            public string FFMpegArgs = "-c:a aac -c:v libx264 -pix_fmt yuv420p -preset ultrafast";
+            public string FFMpegArgs = "-c:a aac -c:v libx264 -shortest  -filter_complex \"[1:a]apad\" -pix_fmt yuv420p -preset ultrafast";
             public int VideoFPS = 60;
             public int VideoHeight = 1080;
             public int VideoWidth = 1920;

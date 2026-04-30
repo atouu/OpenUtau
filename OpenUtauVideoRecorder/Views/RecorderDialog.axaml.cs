@@ -2,11 +2,11 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
-using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using OpenUtau.App.Views;
 using OpenUtau.Core;
@@ -21,6 +21,7 @@ namespace OpenUtauVideoRecorder.Views {
         private Grid mainGrid;
         private Border border;
         private Viewbox viewbox;
+        private CancellationTokenSource cts;
 
         public RecorderDialog(MainWindow wm) {
             mainWindow = wm;
@@ -56,12 +57,33 @@ namespace OpenUtauVideoRecorder.Views {
             windowGrid.Children.Add(mainGrid);
         }
 
-        public async void Record(object sender, RoutedEventArgs args) {
-            vm.IsRecording = true;
+        public async void OnRecord(object sender, RoutedEventArgs args) {
+            if (!Path.Exists(vm.FFMpegPath)) {
+                MessageBox.ShowModal(this, $"FFmpeg path \"{vm.FFMpegPath}\" not found.", Title);
+                return;
+            }
+            if (string.IsNullOrEmpty(vm.OutputPath)) {
+                MessageBox.ShowModal(this, "Output path cannot be empty.", Title);
+                return;
+            }
 
+            cts = new CancellationTokenSource();
+
+            vm.IsRecording = false;
+
+            try {
+                await Record();
+            } catch (OperationCanceledException) {
+            } catch (Exception e) {
+                await MessageBox.ShowError(this, e);
+            };
+            vm.IsRecording = false;
+        }
+
+        private async Task Record() {
             var pxSize = new PixelSize(vm.VideoWidth, vm.VideoHeight);
 
-            var audiopath = Path.ChangeExtension(vm.OutputPath, "wav");
+            var audiopath = Path.Join(PathManager.Inst.CachePath, $"{Guid.NewGuid()}.wav");
 
             await PlaybackManager.Inst.RenderMixdown(DocManager.Inst.Project, audiopath);
 
@@ -92,14 +114,20 @@ namespace OpenUtauVideoRecorder.Views {
 
             using var cb = new RenderTargetBitmap(pxSize);
             int incr = DocManager.Inst.Project.timeAxis.MsPosToTickPos(1000) / vm.VideoFPS;
+
             for (int i = 0; i < DocManager.Inst.Project.EndTick; i += incr) {
+                if (cts.IsCancellationRequested) {
+                    break;
+                }
                 DocManager.Inst.ExecuteCmd(new SetPlayPosTickNotification(i));
                 cb.Render(mainGrid);
                 cb.CopyPixels(new PixelRect(0, 0, pxSize.Width, pxSize.Height), ptr, buffer.Length, stride);
-                await inputStream.WriteAsync(buffer);
+                await inputStream.WriteAsync(buffer, cts.Token);
             }
 
             process.Close();
+
+            File.Delete(audiopath);
 
             if (handle.IsAllocated)
                 handle.Free();
@@ -107,7 +135,10 @@ namespace OpenUtauVideoRecorder.Views {
             inputStream.Dispose();
 
             DocManager.Inst.ExecuteCmd(new ProgressBarNotification(0, "Video Render Done"));
-            vm.IsRecording = false;
+        }
+
+        public void OnStop(object sender, RoutedEventArgs args) {
+            cts.Cancel();
         }
 
         private void OnVideoHeightChanged(object sender, NumericUpDownValueChangedEventArgs e) {
@@ -130,6 +161,31 @@ namespace OpenUtauVideoRecorder.Views {
             if (e.NewValue == null) {
                 ((NumericUpDown) sender).Value = 1;
                 return;
+            }
+        }
+
+        private async void OnSelectFFMpegPath(object sender, RoutedEventArgs e) {
+            var files = await this.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions {
+                Title = "Select FFMpeg Executable",
+                AllowMultiple = false,
+                FileTypeFilter = [ new("Executable") {
+                    MimeTypes = ["application/x-executable", "application/vnd.microsoft.portable-executable" ],
+                    AppleUniformTypeIdentifiers = [ "public.unix-executable" ]
+                }]
+            });
+            if (files != null) {
+                vm.FFMpegPath = files[0].Path.AbsolutePath;
+            }
+        }
+
+        private async void OnSelectOutputPath(object sender, RoutedEventArgs e) {
+            var file = await this.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions {
+                Title = "Save Video As",
+                DefaultExtension = "mp4",
+                SuggestedFileName = "output"
+            });
+            if (file != null) {
+                vm.OutputPath = file.Path.AbsolutePath;
             }
         }
     }

@@ -19,23 +19,30 @@
         </Style>
     </Window.Styles>
     <StackPanel Spacing="5" Margin="5">
-        <TextBlock Text="FFMpeg Path:"/>
-        <TextBox Text="{Binding FFMpegPath}" />
-        <TextBlock Text="FFMpeg Args:"/>
+        <TextBlock Text="FFmpeg Path:"/>
+        <Grid ColumnDefinitions="*,5,auto">
+            <TextBox Grid.Column="0" Text="{Binding FFMpegPath}" />
+            <Button Grid.Column="2" Content="Select" Margin="0,0,0,4" Click="OnSelectFFMpegPath"/>
+        </Grid>
+        <TextBlock Text="FFmpeg Args:"/>
         <TextBox Text="{Binding FFMpegArgs}" />
         <TextBlock Text="Output Path"/>
-        <TextBox Text="{Binding OutputPath}" />
-        <Grid RowDefinitions="auto,auto" ColumnDefinitions="*,*,*">
+        <Grid ColumnDefinitions="*,5,auto">
+            <TextBox Grid.Column="0" Text="{Binding OutputPath}" />
+            <Button Grid.Column="2" Content="Save As" Margin="0,0,0,4" Click="OnSelectOutputPath"/>
+        </Grid>
+        <Grid RowDefinitions="auto,auto" ColumnDefinitions="*,5,*,5,*">
             <TextBlock Grid.Row="0" Grid.Column="0" Text="FPS:"/>
             <NumericUpDown Classes="int" Grid.Row="1" Grid.Column="0" Watermark="FPS"
                 Value="{Binding VideoFPS}" Minimum="1" ValueChanged="OnVideoFPSChanged" />
-            <TextBlock Grid.Row="0" Grid.Column="1" Text="Width:"/>
-            <NumericUpDown Classes="int" Grid.Row="1" Grid.Column="1" Watermark="Width"
+            <TextBlock Grid.Row="0" Grid.Column="2" Text="Width:"/>
+            <NumericUpDown Classes="int" Grid.Row="1" Grid.Column="2" Watermark="Width"
                 Value="{Binding VideoWidth}" Minimum="0" ValueChanged="OnVideoWidthChanged"/>
-            <TextBlock Grid.Row="0" Grid.Column="2" Text="Height:"/>
-            <NumericUpDown Classes="int" Grid.Row="1" Grid.Column="2" Watermark="Height"
+            <TextBlock Grid.Row="0" Grid.Column="4" Text="Height:"/>
+            <NumericUpDown Classes="int" Grid.Row="1" Grid.Column="4" Watermark="Height"
                 Value="{Binding VideoHeight}" Minimum="0" ValueChanged="OnVideoHeightChanged"/>
         </Grid>
-        <Button Content="Record" IsEnabled="{Binding !IsRecording}" Click="Record"/>
+        <Button Content="Record" IsVisible="{Binding !IsRecording}" Click="OnRecord"/>
+        <Button Content="Stop" IsVisible="{Binding IsRecording}" Click="OnStop"/>
     </StackPanel>
 </Window>
