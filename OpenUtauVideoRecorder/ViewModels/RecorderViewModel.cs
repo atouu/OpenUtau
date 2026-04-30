@@ -1,17 +1,50 @@
 using System.Reactive.Linq;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
 
 namespace OpenUtauVideoRecorder.ViewModels {
 
     public class RecorderViewModel : ReactiveObject {
-        [Reactive] public string FFMpegPath { get; set; }
-        [Reactive] public string FFMpegArgs { get; set; }
-        [Reactive] public string OutputPath { get; set; }
-        [Reactive] public int VideoFPS { get; set; }
-        [Reactive] public int VideoHeight { get; set; }
-        [Reactive] public int VideoWidth { get; set; }
-        [Reactive] public bool IsRecording { get; set; }
+        private string _ffMpegPath;
+        public string FFMpegPath {
+            get => _ffMpegPath;
+            set => this.RaiseAndSetIfChanged(ref _ffMpegPath, value);
+        }
+
+        private string _ffMpegArgs;
+        public string FFMpegArgs {
+            get => _ffMpegArgs;
+            set => this.RaiseAndSetIfChanged(ref _ffMpegArgs, value);
+        }
+
+        private string _outputPath;
+        public string OutputPath {
+            get => _outputPath;
+            set => this.RaiseAndSetIfChanged(ref _outputPath, value);
+        }
+
+        private int _videoFPS;
+        public int VideoFPS {
+            get => _videoFPS;
+            set => this.RaiseAndSetIfChanged(ref _videoFPS, value);
+        }
+
+        private int _videoHeight;
+        public int VideoHeight {
+            get => _videoHeight;
+            set => this.RaiseAndSetIfChanged(ref _videoHeight, value);
+        }
+
+        private int _videoWidth;
+        public int VideoWidth {
+            get => _videoWidth;
+            set => this.RaiseAndSetIfChanged(ref _videoWidth, value);
+        }
+
+        private bool _isRecording;
+        public bool IsRecording {
+            get => _isRecording;
+            set => this.RaiseAndSetIfChanged(ref _isRecording, value);
+        }
 
         public RecorderViewModel() {
             FFMpegPath = Preferences.Default.FFMpegPath;
