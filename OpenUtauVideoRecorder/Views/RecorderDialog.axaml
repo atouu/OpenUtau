@@ -1,0 +1,41 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" MinWidth="400" Width="400" Height="400"
+        x:Class="OpenUtauVideoRecorder.Views.RecorderDialog" Closing="WindowClosing"
+        Title="Video Recorder">
+    <Window.Styles>
+        <Style Selector="NumericUpDown.nospinner /template/ ButtonSpinner">
+            <Setter Property="MinHeight" Value="0"/>
+            <Setter Property="Height" Value="20"/>
+        </Style>
+        <Style Selector="NumericUpDown.nospinner">
+            <Setter Property="Height" Value="20"/>
+            <Setter Property="Padding" Value="4,1"/>
+        </Style>
+    </Window.Styles>
+    <StackPanel Spacing="5" Margin="5">
+        <TextBlock Text="FFMpeg Path:"/>
+        <TextBox Text="{Binding FFMpegPath}" />
+        <TextBlock Text="FFMpeg Args:"/>
+        <TextBox Text="{Binding FFMpegArgs}" />
+        <TextBlock Text="Output Path"/>
+        <TextBox Text="{Binding OutputPath}" />
+        <Grid RowDefinitions="auto,auto" ColumnDefinitions="*,*,*">
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="FPS:"/>
+            <NumericUpDown Classes="nospinner" Grid.Row="1" Grid.Column="0" Watermark="FPS"
+                Value="{Binding VideoFPS}" Minimum="1" ValueChanged="OnVideoFPSChanged"
+                ShowButtonSpinner="False" FormatString="0" ParsingNumberStyle="Integer"/>
+            <TextBlock Grid.Row="0" Grid.Column="1" Text="Width:"/>
+            <NumericUpDown Classes="nospinner" Grid.Row="1" Grid.Column="1" Watermark="Width"
+                Value="{Binding VideoWidth}" Minimum="0" ValueChanged="OnVideoWidthChanged"
+                ShowButtonSpinner="False" FormatString="0" ParsingNumberStyle="Integer"/>
+            <TextBlock Grid.Row="0" Grid.Column="2" Text="Height:"/>
+            <NumericUpDown Classes="nospinner" Grid.Row="1" Grid.Column="2" Watermark="Height"
+                Value="{Binding VideoHeight}" Minimum="0" ValueChanged="OnVideoHeightChanged"
+                ShowButtonSpinner="False" FormatString="0" ParsingNumberStyle="Integer"/>
+        </Grid>
+        <Button Content="Record" IsEnabled="{Binding !IsRecording}" Click="Record"/>
+    </StackPanel>
+</Window>

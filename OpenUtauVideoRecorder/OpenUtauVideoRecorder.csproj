@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OpenUtau\OpenUtau.csproj" />
+    <ProjectReference Include="..\OpenUtau.Core\OpenUtau.Core.csproj" />
+  </ItemGroup>
+
+  <Target Name="CopyOutput" AfterTargets="Publish">
+    <Move
+      SourceFiles="$(PublishDir)\OpenUtauVideoRecorder.dll"
+      DestinationFolder="$(OutputPath)/OpenUtauVideoRecorder" />
+  </Target>
+
+</Project>
