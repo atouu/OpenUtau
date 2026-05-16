@@ -52,7 +52,8 @@ namespace OpenUtau.Core {
                 };
             }
             return new List<string> {
-                "CPU"
+                "CPU",
+                "WebGPU"
             };
         }
 
@@ -124,6 +125,9 @@ namespace OpenUtau.Core {
                     break;
                 case "NNAPI":
                     options.AppendExecutionProvider_Nnapi();
+                    break;
+                case "WebGPU":
+                    options.AppendExecutionProvider("WebGPU");
                     break;
             }
             return options;

@@ -88,6 +88,17 @@ jobs:
           copy /y Microsoft.AI.DirectML\bin\${{ matrix.arch.arch }}-${{ matrix.arch.os }}\DirectML.dll bin\${{ matrix.arch.name }}\
         if: ${{ matrix.arch.os == 'win' }}
 
+      - name: WebGPU
+        env:
+          ONNXRUNTIME_VER: 1.25.1
+        run: |
+          WHEEL_URL=curl -sSL "https://pypi.org/pypi/onnxruntime-webgpu/$ONNXRUNTIME_VER/json" | jq -r '.urls[] | select(.url | contains("cp314-cp314-manylinux_2_27_x86_64")) | .url'
+          curl -sSL "$WHEEL_URL" -o onnxruntime-webgpu.zip
+          unzip onnxruntime-webgpu.zip "onnxruntime/capi/libonnxruntime*"
+          mv onnxruntime/capi/libonnxruntime.so.$ONNXRUNTIME_VER bin\${{ matrix.arch.name }}\
+          mv onnxruntime/capi/libonnxruntime_providers_shared.so bin\${{ matrix.arch.name }}\
+        if: ${{ matrix.arch.os == 'linux' }}
+
       - name: Set executable permission
         run: chmod +x bin/${{ matrix.arch.name }}/OpenUtau
         if: ${{ matrix.arch.os == 'linux' }}
