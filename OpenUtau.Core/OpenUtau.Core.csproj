@@ -6,6 +6,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DebugType>embedded</DebugType>
     <Nullable>enable</Nullable>
+    <!-- Force OpenUtau.Core to read RID -->
+    <RuntimeIdentifiers>;</RuntimeIdentifiers>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="BunLabs.NAudio.Flac" Version="2.0.1" />
@@ -44,6 +46,33 @@
   <ItemGroup Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' == 'true'">
     <PackageReference Include="Microsoft.ML.OnnxRuntime.Managed" Version="1.25.1" />
   </ItemGroup>
+  <PropertyGroup>
+    <EffectiveRid Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</EffectiveRid>
+    <EffectiveRid Condition="'$(EffectiveRid)' == ''">$(NETCoreSdkRuntimeIdentifier)</EffectiveRid>
+  </PropertyGroup>
+  <Target Name="DownloadOnnxRuntimeWebGpu" BeforeTargets="AssignTargetPaths"
+          Condition="'$(EffectiveRid)' == 'linux-x64' Or '$(EffectiveRid)' == 'linux-arm64'">
+    <PropertyGroup>
+      <OnnxRuntimeBinUrl Condition="'$(EffectiveRid)' == 'linux-x64'">
+        https://unpkg.com/onnxruntime-node@1.25.1/bin/napi-v6/linux/x64/libonnxruntime.so.1
+      </OnnxRuntimeBinUrl>
+      <OnnxRuntimeBinUrl Condition="'$(EffectiveRid)' == 'linux-arm64'">
+        https://unpkg.com/onnxruntime-node@1.25.1/bin/napi-v6/linux/arm64/libonnxruntime.so.1
+      </OnnxRuntimeBinUrl>
+    </PropertyGroup>
+    <DownloadFile
+        SourceUrl="$(OnnxRuntimeBinUrl)"
+        DestinationFolder="$(IntermediateOutputPath)"
+        DestinationFileName="libonnxruntime.so">
+      <Output TaskParameter="DownloadedFile" ItemName="DownloadedOnnxRuntime" />
+    </DownloadFile>
+    <ItemGroup>
+      <Content Include="@(DownloadedOnnxRuntime)">
+        <TargetPath>libonnxruntime.so</TargetPath>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+  </Target>
   <ItemGroup>
     <Compile Update="Analysis\Crepe\Resources.Designer.cs">
       <DesignTime>True</DesignTime>

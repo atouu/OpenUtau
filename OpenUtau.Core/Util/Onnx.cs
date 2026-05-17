@@ -50,10 +50,14 @@ namespace OpenUtau.Core {
                 "CPU",
                 "NNAPI"
                 };
-            }
-            return new List<string> {
+            } else if (OS.IsLinux()) {
+                return new List<string> {
                 "CPU",
                 "WebGPU"
+                };
+            }
+            return new List<string> {
+                "CPU"
             };
         }
 
