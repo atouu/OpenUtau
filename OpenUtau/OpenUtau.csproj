@@ -74,6 +74,33 @@
     <ProjectReference Include="..\OpenUtau.Core\OpenUtau.Core.csproj" />
     <ProjectReference Include="..\OpenUtau.Plugin.Builtin\OpenUtau.Plugin.Builtin.csproj" />
   </ItemGroup>
+  <PropertyGroup>
+    <EffectiveRid Condition="'$(RuntimeIdentifier)' != ''">$(RuntimeIdentifier)</EffectiveRid>
+    <EffectiveRid Condition="'$(EffectiveRid)' == ''">$(NETCoreSdkRuntimeIdentifier)</EffectiveRid>
+  </PropertyGroup>
+  <Target Name="DownloadOnnxRuntimeWebGpu" BeforeTargets="AssignTargetPaths"
+          Condition="'$(EffectiveRid)' == 'linux-x64' Or '$(EffectiveRid)' == 'linux-arm64'">
+    <PropertyGroup>
+      <OnnxRuntimeBinUrl Condition="'$(EffectiveRid)' == 'linux-x64'">
+        https://unpkg.com/onnxruntime-node@1.25.1/bin/napi-v6/linux/x64/libonnxruntime.so.1
+      </OnnxRuntimeBinUrl>
+      <OnnxRuntimeBinUrl Condition="'$(EffectiveRid)' == 'linux-arm64'">
+        https://unpkg.com/onnxruntime-node@1.25.1/bin/napi-v6/linux/arm64/libonnxruntime.so.1
+      </OnnxRuntimeBinUrl>
+    </PropertyGroup>
+    <DownloadFile
+        SourceUrl="$(OnnxRuntimeBinUrl)"
+        DestinationFolder="$(IntermediateOutputPath)"
+        DestinationFileName="libonnxruntime.so">
+      <Output TaskParameter="DownloadedFile" ItemName="DownloadedOnnxRuntime" />
+    </DownloadFile>
+    <ItemGroup>
+      <Content Include="@(DownloadedOnnxRuntime)">
+        <TargetPath>libonnxruntime.so</TargetPath>
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+  </Target>
   <ItemGroup Condition="'$(Configuration)'=='DEBUG'">
     <None Include="..\runtimes\**" CopyToOutputDirectory="PreserveNewest" LinkBase="runtimes\" />
   </ItemGroup>
