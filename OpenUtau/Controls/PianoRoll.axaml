@@ -132,13 +132,10 @@
                         SnapDiv="{Binding NotesViewModel.SnapDiv, Mode=OneWay}"
                         SnapTicks="{Binding NotesViewModel.SnapTicks}"
                         ShowBarNumber="True"/>
-      <Canvas Grid.Row="3" Grid.RowSpan="3" Grid.Column="1"
-              Bounds="{Binding NotesViewModel.PortraitCanvasBounds, Mode=OneWayToSource}">
-        <Image HorizontalAlignment="Right" Source="{Binding NotesViewModel.Portrait}"
-               Canvas.Bottom="{Binding NotesViewModel.PortraitPosition}" Canvas.Right="100" 
-               Height="{Binding NotesViewModel.PortraitHeight}" OpacityMask="{Binding NotesViewModel.PortraitMask}"
-               Stretch="Uniform"/>
-      </Canvas>
+      <Viewbox Grid.Row="3" Grid.RowSpan="3" Grid.Column="1" HorizontalAlignment="Right" Margin="0,0,100,0">
+        <Image HorizontalAlignment="Right" Source="{Binding NotesViewModel.Portrait}" Stretch="None"
+               OpacityMask="{Binding NotesViewModel.PortraitMask}" Margin="{Binding NotesViewModel.PortraitMargin}"/>
+      </Viewbox>
       <Border Grid.Row="3" Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Bottom"
               Margin="0,0,0,60" Height="60" IsHitTestVisible="False">
         <c:WaveformImage DataContext="{Binding NotesViewModel, Mode=OneWay}"

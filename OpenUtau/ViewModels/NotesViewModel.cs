@@ -87,9 +87,7 @@ namespace OpenUtau.App.ViewModels {
         [Reactive] public Bitmap? Avatar { get; set; }
         [Reactive] public Bitmap? Portrait { get; set; }
         [Reactive] public IBrush? PortraitMask { get; set; }
-        [Reactive] public Rect PortraitCanvasBounds { get; set; }
-        [Reactive] public double PortraitHeight { get; set; }
-        [Reactive] public double PortraitPosition { get; set; }
+        [Reactive] public Thickness PortraitMargin { get; set; }
         [Reactive] public string WindowTitle { get; set; } = "Piano Roll";
         [Reactive] public SolidColorBrush TrackAccentColor { get; set; } = ThemeManager.GetTrackColor("Blue").AccentColor;
         public double ViewportTicks => viewportTicks.Value;
@@ -150,8 +148,6 @@ namespace OpenUtau.App.ViewModels {
             smallChangeY = this.WhenAnyValue(x => x.ViewportTracks)
                 .Select(h => h / 8)
                 .ToProperty(this, x => x.SmallChangeY);
-            this.WhenAnyValue(x => x.PortraitCanvasBounds)
-                .Subscribe(UpdatePortraitHeight);
             this.WhenAnyValue(x => x.Bounds)
                 .Subscribe(_ => {
                     OnXZoomed(new Point(), 0);
@@ -323,7 +319,7 @@ namespace OpenUtau.App.ViewModels {
                             LoadPortrait(Part, Project);
                             break;
                         case "PortraitHeight":
-                            UpdatePortraitHeight(PortraitCanvasBounds);
+                            UpdatePortraitHeight();
                             break;
                         case "PortraitOpacity":
                             UpdatePortraitOpacity();
@@ -344,13 +340,12 @@ namespace OpenUtau.App.ViewModels {
                 });
         }
 
-        private void UpdatePortraitHeight(Rect bounds) {
-            if (Preferences.Default.ShowPortrait && Singer != null) {
-                int cap = Singer.PortraitHeightCap > 0 ? Singer.PortraitHeightCap : Preferences.Default.PortraitHeightCap;
-                double heightCap = bounds.Height * cap / 100;
-                int pos = Singer.PortraitPosition > -1 ? Singer.PortraitPosition : Preferences.Default.PortraitPosition;
-                PortraitPosition = (bounds.Height - heightCap) * pos / 100;
-                PortraitHeight = heightCap;
+        private void UpdatePortraitHeight() {
+            if (Preferences.Default.ShowPortrait && Singer != null && Portrait != null) {
+                double cap = 1 - ((double) (Singer.PortraitHeightCap > 0 ? Singer.PortraitHeightCap : Preferences.Default.PortraitHeightCap) / 100);
+                double pos = (double) (Singer.PortraitPosition > -1 ? Singer.PortraitPosition : Preferences.Default.PortraitPosition) / 100;
+                double margin = Portrait.Size.Height * cap;
+                PortraitMargin = new(0, margin * pos, 0, margin * (1 - pos));
             }
         }
 
@@ -575,6 +570,7 @@ namespace OpenUtau.App.ViewModels {
                                     Portrait = ResizePortrait(new Bitmap(stream), singer.PortraitHeight);
                                     portraitSource = singer.Portrait;
                                 }
+                                UpdatePortraitHeight();
                             }
                         } catch (Exception e) {
                             Portrait?.Dispose();
@@ -584,7 +580,6 @@ namespace OpenUtau.App.ViewModels {
                         }
                     }
                 });
-                UpdatePortraitHeight(PortraitCanvasBounds);
             }
         }
         private void LoadWindowTitle(UPart? part, UProject? project) {
