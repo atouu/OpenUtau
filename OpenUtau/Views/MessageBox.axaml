@@ -2,13 +2,15 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:OpenUtau.App.ViewModels"
+        x:DataType="vm:PasteParamViewModel"
         mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
         x:Class="OpenUtau.App.Views.MessageBox" SizeToContent="WidthAndHeight" CanResize="False"
         Icon="/Assets/open-utau.ico"
         Title="MessageBox" MinWidth="300" MinHeight="150"
         WindowStartupLocation="CenterScreen">
   <ScrollViewer MaxHeight="700" VerticalScrollBarVisibility="Auto">
-    <Grid Margin="{Binding $parent.WindowDecorationMargin}">
+    <Grid Margin="{Binding $parent[Window].WindowDecorationMargin}">
       <Grid.RowDefinitions>
         <RowDefinition Height="*"/>
         <RowDefinition Height="50"/>

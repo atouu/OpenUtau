@@ -4,7 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:OpenUtau.App.ViewModels"
              mc:Ignorable="d" d:DesignWidth="300" d:DesignHeight="104"
-             x:Class="OpenUtau.App.Controls.TrackHeader" Width="300" Height="104" TrackNo="{Binding TrackNo}">
+             x:Class="OpenUtau.App.Controls.TrackHeader" Width="300" Height="104" TrackNo="{Binding TrackNo}"
+             x:DataType="vm:TrackHeaderViewModel">
   <Design.DataContext>
     <vm:TrackHeaderViewModel/>
   </Design.DataContext>
@@ -41,7 +42,7 @@
     <ContextMenu x:Key="RenderersMenuRes" Classes="context" Name="RenderersMenu" Placement="BottomEdgeAlignedLeft" 
                  HorizontalOffset="-3" ItemsSource="{Binding RenderersMenuItems}">
       <ContextMenu.Styles>
-        <Style Selector="MenuItem">
+        <Style Selector="MenuItem" x:DataType="vm:SingerMenuItemViewModel">
           <Setter Property="Header" Value="{Binding Header}"/>
           <Setter Property="Command" Value="{Binding Command}"/>
           <Setter Property="CommandParameter" Value="{Binding CommandParameter}"/>
@@ -52,7 +53,7 @@
     <ContextMenu x:Key="PhonemizersMenuRes" Classes="context" Name="PhonemizersMenu" Placement="BottomEdgeAlignedLeft" 
                  HorizontalOffset="-3" ItemsSource="{Binding PhonemizerMenuItems}">
       <ContextMenu.Styles>
-        <Style Selector="MenuItem">
+        <Style Selector="MenuItem" x:DataType="vm:SingerMenuItemViewModel">
           <Setter Property="Header" Value="{Binding Header}"/>
           <Setter Property="Command" Value="{Binding Command}"/>
           <Setter Property="CommandParameter" Value="{Binding CommandParameter}"/>
@@ -63,7 +64,7 @@
     <ContextMenu x:Key="SingersMenuRes" Classes="context" Name="SingersMenu" Placement="BottomEdgeAlignedLeft" 
                  HorizontalOffset="-3" ItemsSource="{Binding SingerMenuItems}">
       <ContextMenu.Styles>
-        <Style Selector="MenuItem">
+        <Style Selector="MenuItem" x:DataType="vm:SingerMenuItemViewModel">
           <Setter Property="Header" Value="{Binding Header}"/>
           <Setter Property="Command" Value="{Binding Command}"/>
           <Setter Property="CommandParameter" Value="{Binding CommandParameter}"/>

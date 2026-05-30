@@ -18,10 +18,10 @@
            Source="/Assets/open-utau.ico"/>
     <Image x:Name="LogoTypeDark" Height="16" Margin="0,136,0,10"
            VerticalAlignment="Top" HorizontalAlignment="Center"
-           Source="/Assets/logotype-w.png" IsVisible="{Binding IsDarkMode}"/>
+           Source="/Assets/logotype-w.png"/>
     <Image x:Name="LogoTypeLight" Height="16" Margin="0,136,0,10"
            VerticalAlignment="Top" HorizontalAlignment="Center"
-           Source="/Assets/logotype.png" IsVisible="{Binding !IsDarkMode}"/>
+           Source="/Assets/logotype.png"/>
     <ProgressBar VerticalAlignment="Bottom" HorizontalAlignment="Stretch"
            IsIndeterminate="True"/>
   </Grid>

@@ -23,7 +23,7 @@ namespace OpenUtau.Core {
     }
 
     public class DocManager : SingletonBase<DocManager> {
-        DocManager() {
+        public DocManager() {
             Project = new UProject();
         }
 

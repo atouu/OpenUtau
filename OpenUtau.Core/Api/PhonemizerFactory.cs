@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -25,7 +26,10 @@ namespace OpenUtau.Api {
 
         private static Dictionary<Type, PhonemizerFactory> factories = new Dictionary<Type, PhonemizerFactory>();
         private static PhonemizerFactory[] orderedFactories = [];
-        public static PhonemizerFactory Get(Type type) {
+        public static PhonemizerFactory Get([DynamicallyAccessedMembers(
+                DynamicallyAccessedMemberTypes.PublicParameterlessConstructor |
+                DynamicallyAccessedMemberTypes.PublicProperties)] Type type)
+        {
             if (!factories.TryGetValue(type, out var factory)) {
                 var attr = type.GetCustomAttribute<PhonemizerAttribute>();
                 if (attr == null || string.IsNullOrEmpty(attr.Name) || string.IsNullOrEmpty(attr.Tag)) {

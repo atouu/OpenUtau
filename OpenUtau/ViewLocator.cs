@@ -2,8 +2,12 @@
 using Avalonia.Controls.Templates;
 using OpenUtau.App.ViewModels;
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace OpenUtau.App {
+    [RequiresUnreferencedCode(
+    "Default implementation of ViewLocator involves reflection which may be trimmed away.",
+    Url = "https://docs.avaloniaui.net/docs/concepts/view-locator")]
     public class ViewLocator : IDataTemplate {
         public Control? Build(object? data) {
             if (data is null) {

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reactive;
 using System.Reflection;
 using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -149,7 +150,7 @@ namespace OpenUtau.App.Controls {
             try {
                 ViewModel.ExternalBatchEdits.AddRange(
                     DocManager.Inst.ExternalBatchEditTypes
-                        .Select(type => Activator.CreateInstance(type) as BatchEdit)
+                        .Select(CreatePluginInstance)
                         .Where(edit => edit != null)
                         .Select(edit => new MenuItemViewModel() {
                             Header = ThemeManager.GetString(edit!.Name),
@@ -220,6 +221,11 @@ namespace OpenUtau.App.Controls {
                 });
 
             DocManager.Inst.AddSubscriber(this);
+        }
+
+        public BatchEdit? CreatePluginInstance([DynamicallyAccessedMembers(
+                DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type) {
+            return Activator.CreateInstance(type) as BatchEdit;
         }
 
         void OnMenuClosed(object sender, RoutedEventArgs args) {

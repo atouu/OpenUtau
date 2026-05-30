@@ -5,6 +5,7 @@
         xmlns:vm="using:OpenUtau.App.ViewModels"
         xmlns:c="clr-namespace:OpenUtau.App.Controls"
         mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="650"
+        x:DataType="vm:MainWindowViewModel"
         x:Class="OpenUtau.App.Views.MainWindow"
         Icon="/Assets/open-utau.ico"
         Title="{Binding Title}" MinWidth="300" MinHeight="200" Width="{Binding Width}" Height="{Binding Height}"
@@ -297,7 +298,7 @@
             <Canvas.ContextMenu>
               <ContextMenu Name="TimelineContextMenu" ItemsSource="{Binding TimelineContextMenuItems}">
                 <ContextMenu.Styles>
-                  <Style Selector="MenuItem">
+                  <Style Selector="MenuItem" x:DataType="vm:MenuItemViewModel">
                     <Setter Property="Header" Value="{Binding Header}"/>
                     <Setter Property="Command" Value="{Binding Command}"/>
                     <Setter Property="CommandParameter" Value="{Binding CommandParameter}"/>
@@ -354,7 +355,8 @@
             <c:PartsCanvas.ContextMenu>
               <ContextMenu Name="PartsContextMenu"
                           Opening="PartsContextMenuOpening"
-                          Closing="PartsContextMenuClosing">
+                          Closing="PartsContextMenuClosing"
+                          x:DataType="vm:PartsContextMenuArgs">
                 <MenuItem Header="{DynamicResource context.part.delete}"
                           Command="{Binding PartDeleteCommand}"
                           CommandParameter="{Binding Part}"/>

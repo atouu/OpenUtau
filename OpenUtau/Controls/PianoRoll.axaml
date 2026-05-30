@@ -7,12 +7,13 @@
         xmlns:c="clr-namespace:OpenUtau.App.Controls"
         mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="650"
         x:Class="OpenUtau.App.Controls.PianoRoll" Focusable="True"
+        x:DataType="vm:PianoRollViewModel"
         Background="Transparent" GotFocus="OnPianoRollFocus">
   <UserControl.Styles>
     <StyleInclude Source="/Styles/PianoRollStyles.axaml"/>
   </UserControl.Styles>
   <Border>
-    <Grid Margin="{Binding $parent[1].WindowDecorationMargin}" PointerMoved="BackgroundPointerMoved">
+    <Grid Margin="{Binding $parent[Window].WindowDecorationMargin}" PointerMoved="BackgroundPointerMoved">
       <Grid.RowDefinitions>
         <RowDefinition Height="24"/>
         <RowDefinition Height="24"/>
@@ -160,7 +161,7 @@
           <ContextMenu ItemsSource="{Binding NotesContextMenuItems}"
                        Opening="NotesContextMenuOpening">
             <ContextMenu.Styles>
-              <Style Selector="MenuItem">
+              <Style Selector="MenuItem" x:DataType="vm:MenuItemViewModel">
                 <Setter Property="Header" Value="{Binding Header}"/>
                 <Setter Property="Command" Value="{Binding Command, FallbackValue={x:Null}}"/>
                 <Setter Property="CommandParameter" Value="{Binding CommandParameter}"/>
@@ -560,16 +561,9 @@
             </ToggleButton>
             <ToggleButton Classes="toolbar" Margin="0" Padding="1" Height="20" Width="20" IsChecked="{Binding ShowPhonemizerTags}"
                           ToolTip.Tip="Show Phonemizer Tags">
-              <Grid Width="18" Height="18">
-                <Path Classes="filled" Data="M21.41 11.58l-9-9C12.04 2.21 11.54 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.41l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.41zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z">
-                  <Path.RenderTransform>
-                    <TransformGroup>
-                      <ScaleTransform ScaleX=".65" ScaleY=".65" />
-                      <TranslateTransform X="-1" Y="-1"/>
-                    </TransformGroup>
-                  </Path.RenderTransform>
-                </Path>
-              </Grid>
+              <Border Width="18" Height="18">
+                <Path Classes="filled" Data="M14.19 8.77 9.23 3.69a1 1 0 0 0-.78-.33H4.59c-.61 0-1.1.51-1.1 1.13v3.95q0 .48.33.8l4.96 5.08a1.1 1.1 0 0 0 1.56 0l3.86-3.95a1.14 1.14 0 0 0 0-1.6zM5.42 6.18a.84.84 0 0 1-.83-.85c0-.47.37-.85.83-.85s.83.38.83.85-.37.85-.83.85"/>
+              </Border>
             </ToggleButton>
             <Button Margin="0" Padding="0,1" Height="20" Width="40" Background="Transparent" Click="OnSnapDivMenuButton"
               ToolTip.Tip="{DynamicResource pianoroll.snapdiv}">
