@@ -4,14 +4,15 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Text;
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using OpenUtau.Core.Render;
 using Serilog;
 
 namespace OpenUtau.Core.Util {
 
     public static class Preferences {
-        public static SerializablePreferences Default;
+        public static SerializablePreferences Default { get; private set; }
 
         static Preferences() {
             Load();
@@ -20,7 +21,7 @@ namespace OpenUtau.Core.Util {
         public static void Save() {
             try {
                 File.WriteAllText(PathManager.Inst.PrefsFilePath,
-                    JsonConvert.SerializeObject(Default, Formatting.Indented),
+                    JsonSerializer.Serialize(Default, PrefsJsonContext.Default.SerializablePreferences),
                     Encoding.UTF8);
             } catch (Exception e) {
                 Log.Error(e, "Failed to save prefs.");
@@ -34,8 +35,9 @@ namespace OpenUtau.Core.Util {
                 string exePath = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
                 string shippedPrefsPath = Path.Combine(exePath, "prefs-default.json");
                 if (File.Exists(shippedPrefsPath)) {
-                    var shippedPrefs = JsonConvert.DeserializeObject<SerializablePreferences>(
-                        File.ReadAllText(shippedPrefsPath, Encoding.UTF8));
+                    var shippedPrefs = JsonSerializer.Deserialize<SerializablePreferences>(
+                        File.ReadAllText(shippedPrefsPath, Encoding.UTF8),
+                        PrefsJsonContext.Default.SerializablePreferences);
                     if (shippedPrefs != null) {
                         Default = shippedPrefs;
                     }
@@ -102,8 +104,9 @@ namespace OpenUtau.Core.Util {
         private static void Load() {
             try {
                 if (File.Exists(PathManager.Inst.PrefsFilePath)) {
-                    Default = JsonConvert.DeserializeObject<SerializablePreferences>(
-                        File.ReadAllText(PathManager.Inst.PrefsFilePath, Encoding.UTF8));
+                    Default = JsonSerializer.Deserialize<SerializablePreferences>(
+                        File.ReadAllText(PathManager.Inst.PrefsFilePath, Encoding.UTF8),
+                        PrefsJsonContext.Default.SerializablePreferences);
                     if(Default == null) {
                         Reset();
                         return;
@@ -139,85 +142,85 @@ namespace OpenUtau.Core.Util {
         }
 
         [Serializable]
-        public class SerializablePreferences {
-            public WindowSize MainWindowSize = new WindowSize();
-            public WindowSize PianorollWindowSize = new WindowSize();
-            public int UndoLimit = 100;
-            public List<string> SingerSearchPaths = new List<string>();
-            public string PlaybackDevice = string.Empty;
-            public int PlaybackDeviceNumber;
-            public int? PlaybackDeviceIndex;
-            public bool ShowPrefs = true;
-            public bool ShowTips = true;
-            public string ThemeName = "Light";
-            public bool PenPlusDefault = false;
-            public int DegreeStyle;
-            public bool UseTrackColor = false;
-            public bool ClearCacheOnQuit = false;
-            public bool PreRender = true;
-            public int NumRenderThreads = 2;
-            public string DefaultRenderer = string.Empty;
-            public int WorldlineR = 0;
-            public string OnnxRunner = string.Empty;
-            public int OnnxGpu = 0;
-            public double DiffSingerDepth = 1.0;
-            public int DiffSingerSteps = 20;
-            public int DiffSingerStepsVariance = 20;
-            public int DiffSingerStepsPitch = 10;
-            public bool DiffSingerTensorCache = true;
-            public bool DiffSingerLangCodeHide = false;
-            public bool SkipRenderingMutedTracks = false;
-            public string Language = string.Empty;
-            public string? SortingOrder = null;
-            public List<string> RecentFiles = new List<string>();
-            public string SkipUpdate = string.Empty;
-            public string AdditionalSingerPath = string.Empty;
-            public bool InstallToAdditionalSingersPath = true;
-            public bool LoadDeepFolderSinger = true;
-            public bool PreferCommaSeparator = false;
-            public bool ResamplerLogging = false;
-            public List<string> RecentSingers = new List<string>();
-            public List<string> FavoriteSingers = new List<string>();
-            public Dictionary<string, string> SingerPhonemizers = new Dictionary<string, string>();
-            public List<string> RecentPhonemizers = new List<string>();
-            public bool PreferPortAudio = false;
-            public bool UseSystemDefaultAudioDevice = true;
-            public double PlayPosMarkerMargin = 0.9;
-            public int LockStartTime = 0;
-            public int PlaybackAutoScroll = 2;
-            public bool ReverseLogOrder = true;
-            public bool ShowPortrait = true;
-            public bool ShowIcon = true;
-            public bool ShowGhostNotes = true;
-            public bool PlayTone = true;
-            public bool ShowVibrato = true;
-            public bool ShowPitch = true;
-            public bool ShowFinalPitch = true;
-            public bool ShowWaveform = true;
-            public bool ShowPhoneme = true;
-            public bool ShowExpressions = true;
-            public bool ShowPhonemizerTags = true;
-            public bool ShowNoteParams = true;
-            public Dictionary<string, string> DefaultResamplers = new Dictionary<string, string>();
-            public Dictionary<string, string> DefaultWavtools = new Dictionary<string, string>();
-            public string LyricHelper = string.Empty;
-            public bool LyricsHelperBrackets = false;
-            public int OtoEditor = 0;
-            public string VLabelerPath = string.Empty;
-            public string SetParamPath = string.Empty;
-            public bool Beta = false;
-            public bool RememberMid = false;
-            public bool RememberUst = true;
-            public bool RememberVsqx = true;
-            public string WinePath = string.Empty;
-            public string PhoneticAssistant = string.Empty;
-            public string RecentOpenSingerDirectory = string.Empty;
-            public string RecentOpenProjectDirectory = string.Empty;
-            public bool LockUnselectedNotesPitch = true;
-            public bool LockUnselectedNotesVibrato = true;
-            public bool LockUnselectedNotesExpressions = true;
-            public bool VoicebankPublishUseIgnore = true;
-            public string VoicebankPublishIgnores = @"#Adobe Audition
+        public partial class SerializablePreferences {
+            public WindowSize MainWindowSize { get; set; } = new WindowSize();
+            public WindowSize PianorollWindowSize { get; set; } = new WindowSize();
+            public int UndoLimit { get; set; } = 100;
+            public List<string> SingerSearchPaths { get; set; } = new List<string>();
+            public string PlaybackDevice { get; set; } = string.Empty;
+            public int PlaybackDeviceNumber {get; set; }
+            public int? PlaybackDeviceIndex {get; set; }
+            public bool ShowPrefs { get; set; } = true;
+            public bool ShowTips { get; set; } = true;
+            public string ThemeName { get; set; } = "Light";
+            public bool PenPlusDefault { get; set; } = false;
+            public int DegreeStyle {get; set; }
+            public bool UseTrackColor { get; set; } = false;
+            public bool ClearCacheOnQuit { get; set; } = false;
+            public bool PreRender { get; set; } = true;
+            public int NumRenderThreads { get; set; } = 2;
+            public string DefaultRenderer { get; set; } = string.Empty;
+            public int WorldlineR { get; set; } = 0;
+            public string OnnxRunner { get; set; } = string.Empty;
+            public int OnnxGpu { get; set; } = 0;
+            public double DiffSingerDepth { get; set; } = 1.0;
+            public int DiffSingerSteps { get; set; } = 20;
+            public int DiffSingerStepsVariance { get; set; } = 20;
+            public int DiffSingerStepsPitch { get; set; } = 10;
+            public bool DiffSingerTensorCache { get; set; } = true;
+            public bool DiffSingerLangCodeHide { get; set; } = false;
+            public bool SkipRenderingMutedTracks { get; set; } = false;
+            public string Language { get; set; } = string.Empty;
+            public string? SortingOrder { get; set; } = null;
+            public List<string> RecentFiles { get; set; } = new List<string>();
+            public string SkipUpdate { get; set; } = string.Empty;
+            public string AdditionalSingerPath { get; set; } = string.Empty;
+            public bool InstallToAdditionalSingersPath { get; set; } = true;
+            public bool LoadDeepFolderSinger { get; set; } = true;
+            public bool PreferCommaSeparator { get; set; } = false;
+            public bool ResamplerLogging { get; set; } = false;
+            public List<string> RecentSingers { get; set; } = new List<string>();
+            public List<string> FavoriteSingers { get; set; } = new List<string>();
+            public Dictionary<string, string> SingerPhonemizers { get; set; } = new Dictionary<string, string>();
+            public List<string> RecentPhonemizers { get; set; } = new List<string>();
+            public bool PreferPortAudio { get; set; } = false;
+            public bool UseSystemDefaultAudioDevice { get; set; } = true;
+            public double PlayPosMarkerMargin { get; set; } = 0.9;
+            public int LockStartTime { get; set; } = 0;
+            public int PlaybackAutoScroll { get; set; } = 2;
+            public bool ReverseLogOrder { get; set; } = true;
+            public bool ShowPortrait { get; set; } = true;
+            public bool ShowIcon { get; set; } = true;
+            public bool ShowGhostNotes { get; set; } = true;
+            public bool PlayTone { get; set; } = true;
+            public bool ShowVibrato { get; set; } = true;
+            public bool ShowPitch { get; set; } = true;
+            public bool ShowFinalPitch { get; set; } = true;
+            public bool ShowWaveform { get; set; } = true;
+            public bool ShowPhoneme { get; set; } = true;
+            public bool ShowExpressions { get; set; } = true;
+            public bool ShowPhonemizerTags { get; set; } = true;
+            public bool ShowNoteParams { get; set; } = true;
+            public Dictionary<string, string> DefaultResamplers { get; set; } = new Dictionary<string, string>();
+            public Dictionary<string, string> DefaultWavtools { get; set; } = new Dictionary<string, string>();
+            public string LyricHelper { get; set; } = string.Empty;
+            public bool LyricsHelperBrackets { get; set; } = false;
+            public int OtoEditor { get; set; } = 0;
+            public string VLabelerPath { get; set; } = string.Empty;
+            public string SetParamPath { get; set; } = string.Empty;
+            public bool Beta { get; set; } = false;
+            public bool RememberMid { get; set; } = false;
+            public bool RememberUst { get; set; } = true;
+            public bool RememberVsqx { get; set; } = true;
+            public string WinePath { get; set; } = string.Empty;
+            public string PhoneticAssistant { get; set; } = string.Empty;
+            public string RecentOpenSingerDirectory { get; set; } = string.Empty;
+            public string RecentOpenProjectDirectory { get; set; } = string.Empty;
+            public bool LockUnselectedNotesPitch { get; set; } = true;
+            public bool LockUnselectedNotesVibrato { get; set; } = true;
+            public bool LockUnselectedNotesExpressions { get; set; } = true;
+            public bool VoicebankPublishUseIgnore { get; set; } = true;
+            public string VoicebankPublishIgnores { get; set; } = @"#Adobe Audition
 *.pkf
 
 #UTAU Engines
@@ -249,12 +252,17 @@ namespace OpenUtau.Core.Util {
 #OpenUtau
 errors.txt
 ";
-            public string RecoveryPath = string.Empty;
-            public bool DetachPianoRoll = false;
+            public string RecoveryPath { get; set; } = string.Empty;
+            public bool DetachPianoRoll { get; set; } = false;
 
             // Legacy
-            [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-            public int? Theme;
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+            public int? Theme {get; set; }
         }
+
     }
+
+    [JsonSourceGenerationOptions(WriteIndented = true, NewLine = "\n")]
+    [JsonSerializable(typeof(Preferences.SerializablePreferences))]
+    internal partial class PrefsJsonContext : JsonSerializerContext { }
 }

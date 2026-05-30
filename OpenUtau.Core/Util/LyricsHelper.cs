@@ -14,41 +14,44 @@ namespace OpenUtau.Core.Util {
     public class ActiveLyricsHelper : SingletonBase<ActiveLyricsHelper> {
         public ILyricsHelper? Current { get; private set; }
 
+        private readonly Dictionary<Type, Func<ILyricsHelper>> Factories = new() {
+            [typeof(HiraganaLyricsHelper)] = () => new HiraganaLyricsHelper(),
+            [typeof(PinyinLyricsHelper)] = () => new PinyinLyricsHelper(),
+            [typeof(JyutpingLyricsHelper)] = () => new JyutpingLyricsHelper(),
+            [typeof(ArpabetG2pLyricsHelper)] = () => new ArpabetG2pLyricsHelper(),
+            [typeof(ArpabetPlusG2pLyricsHelper)] = () => new ArpabetPlusG2pLyricsHelper(),
+            [typeof(FilipinoG2pLyricsHelper)] = () => new FilipinoG2pLyricsHelper(),
+            [typeof(FrenchG2pLyricsHelper)] = () => new FrenchG2pLyricsHelper(),
+            [typeof(FrenchMillefeuilleG2pLyricsHelper)] = () => new FrenchMillefeuilleG2pLyricsHelper(),
+            [typeof(GermanG2pLyricsHelper)] = () => new GermanG2pLyricsHelper(),
+            [typeof(GermanMarzipanG2pLyricsHelper)] = () => new GermanMarzipanG2pLyricsHelper(),
+            [typeof(ItalianG2pLyricsHelper)] = () => new ItalianG2pLyricsHelper(),
+            [typeof(PortugueseG2pLyricsHelper)] = () => new PortugueseG2pLyricsHelper(),
+            [typeof(RussianG2pLyricsHelper)] = () => new RussianG2pLyricsHelper(),
+            [typeof(SpanishG2pLyricsHelper)] = () => new SpanishG2pLyricsHelper(),
+            [typeof(KoreanG2pLyricsHelper)] = () => new KoreanG2pLyricsHelper(),
+        };
+
         public ActiveLyricsHelper() {
             Set(GetPreferred());
         }
 
         public void Set(Type? t) {
-            if (t == null || !Available.Contains(t)) {
+            if (t == null || !Factories.TryGetValue(t, out var factory)) {
                 Current = null;
                 return;
             }
-            Current = Activator.CreateInstance(t) as ILyricsHelper;
+
+            Current = factory();
         }
 
         public Type GetPreferred() {
-            return Available.FirstOrDefault(
-                avail => avail.Name == Preferences.Default.LyricHelper)
+            return Factories.Keys.FirstOrDefault(
+                t => t.Name == Preferences.Default.LyricHelper)
                 ?? typeof(HiraganaLyricsHelper);
         }
 
-        public readonly List<Type> Available = new List<Type>() {
-            typeof(HiraganaLyricsHelper),
-            typeof(PinyinLyricsHelper),
-            typeof(JyutpingLyricsHelper),
-            typeof(ArpabetG2pLyricsHelper),
-            typeof(ArpabetPlusG2pLyricsHelper),
-            typeof(FilipinoG2pLyricsHelper),
-            typeof(FrenchG2pLyricsHelper),
-            typeof(FrenchMillefeuilleG2pLyricsHelper),
-            typeof(GermanG2pLyricsHelper),
-            typeof(GermanMarzipanG2pLyricsHelper),
-            typeof(ItalianG2pLyricsHelper),
-            typeof(PortugueseG2pLyricsHelper),
-            typeof(RussianG2pLyricsHelper),
-            typeof(SpanishG2pLyricsHelper),
-            typeof(KoreanG2pLyricsHelper),
-        };
+        public IReadOnlyCollection<Type> Available => Factories.Keys;
     }
 
     public class HiraganaLyricsHelper : ILyricsHelper {
