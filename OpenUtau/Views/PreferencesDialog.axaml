@@ -87,7 +87,7 @@
             <ToggleSwitch IsChecked="{Binding Beta}"/>
           </Grid>
           <TextBlock Classes="restart" IsVisible="{Binding !IsNightly}"/>
-          <TextBlock IsVisible="{Binding IsNightly}" Margin="0,10,0,0" Text="Switching between channels is not supported in nightly builds."/>
+          <TextBlock IsVisible="{Binding IsNightly}" Margin="0,10,0,0" Text="{DynamicResource prefs.note.nightly}"/>
         </StackPanel>
         
         <!-- Playback -->
