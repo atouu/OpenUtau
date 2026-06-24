@@ -227,6 +227,7 @@ jobs:
           tag: nightly
           name: Nightly
           prerelease: true
+          allowUpdates: true
           draft: ${{ inputs.draft }}
           artifacts: "appcast.${{ matrix.arch.name }}*.xml,OpenUtau-${{ matrix.arch.name }}.*"
           body: |
@@ -240,6 +241,4 @@ jobs:
 
             ## macOS says "This app is damaged"
             Open a terminal and run `xattr -rc /Applications/OpenUtau.app`. Try opening OpenUtau again.
-          allowUpdates: true
-          replaceArtifacts: true
         if: ${{ inputs.release && inputs.channel == 'nightly' }}
