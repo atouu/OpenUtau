@@ -25,7 +25,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: openutau/OpenUtau # Please modify if you want to release your fork
         run: |
-            latest=$(gh release list --repo $REPO --json tagName --json tagName --jq 'first(.[] | select(.tagName | test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))).tagName')
+            latest=$(gh release list --repo $REPO --json tagName --jq 'first(.[] | select(.tagName | test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))).tagName')
             nextver=$(npx -y semver -i patch ${latest})
             echo fullver=${nextver}-nightly.`date +%Y%m%d` >> $GITHUB_OUTPUT
       - name: Trigger Build
