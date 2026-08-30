@@ -72,7 +72,7 @@ namespace OpenUtau.App.ViewModels {
         public bool ShowOnnxGpu => OnnxRunner == "DirectML";
 
         // GAME backend (onnx / ggml)
-        public string[] GameBackendOptions { get; } = [ "ONNX", "GGML" ];
+        public string[] GameBackendOptions => [ "ONNX", "GGML" ];
         [Reactive] public string GameBackend { get; set; }
 
         // Appearance
