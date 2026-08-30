@@ -14,11 +14,11 @@ using NetSparkleUpdater.SignatureVerifiers;
 using Newtonsoft.Json;
 using OpenUtau.Core;
 using OpenUtau.Core.Util;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 using Serilog;
 
 namespace OpenUtau.App.ViewModels {
-    public class UpdaterViewModel : ViewModelBase {
+    public partial class UpdaterViewModel : ViewModelBase {
         class GithubReleaseAsset {
             public string name = string.Empty;
             public string browser_download_url = string.Empty;
@@ -38,9 +38,9 @@ namespace OpenUtau.App.ViewModels {
             ?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
             ?.InformationalVersion}";
         public bool IsDarkMode => ThemeManager.IsDarkMode;
-        [Reactive] public string UpdaterStatus { get; set; }
-        [Reactive] public bool UpdateAvailable { get; set; }
-        [Reactive] public FontWeight UpdateButtonFontWeight { get; set; }
+        [Reactive] public partial string UpdaterStatus { get; set; }
+        [Reactive] public partial bool UpdateAvailable { get; set; }
+        [Reactive] public partial FontWeight UpdateButtonFontWeight { get; set; }
         public Action? CloseApplication { get; set; }
 
         private SparkleUpdater? sparkle;
