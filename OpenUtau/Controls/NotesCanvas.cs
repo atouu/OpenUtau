@@ -9,6 +9,7 @@ using OpenUtau.Core;
 using OpenUtau.Core.Ustx;
 using OpenUtau.Core.Util;
 using ReactiveUI;
+using ReactiveUI.Primitives;
 
 namespace OpenUtau.App.Controls {
     class NotesCanvas : Control {
@@ -52,6 +53,11 @@ namespace OpenUtau.App.Controls {
                 nameof(ShowVibrato),
                 o => o.ShowVibrato,
                 (o, v) => o.ShowVibrato = v);
+        public static readonly DirectProperty<NotesCanvas, bool> ShowPhonemizerTagsProperty =
+            AvaloniaProperty.RegisterDirect<NotesCanvas, bool>(
+                nameof(ShowPhonemizerTags),
+                o => o.ShowPhonemizerTags,
+                (o, v) => o.ShowPhonemizerTags = v);
 
         public double TickWidth {
             get => tickWidth;
@@ -85,6 +91,10 @@ namespace OpenUtau.App.Controls {
             get => showVibrato;
             private set => SetAndRaise(ShowVibratoProperty, ref showVibrato, value);
         }
+        public bool ShowPhonemizerTags {
+            get => showPhonemizerTags;
+            private set => SetAndRaise(ShowPhonemizerTagsProperty, ref showPhonemizerTags, value);
+        }
 
         private double tickWidth;
         private double trackHeight;
@@ -94,6 +104,7 @@ namespace OpenUtau.App.Controls {
         private bool showPitch = true;
         private bool showFinalPitch = true;
         private bool showVibrato = true;
+        private bool showPhonemizerTags = true;
         private PolylineGeometry polylineGeometry = new PolylineGeometry();
         private Points points = new Points();
 
@@ -119,6 +130,7 @@ namespace OpenUtau.App.Controls {
             MessageBus.Current.Listen<PartRefreshEvent>()
                 .Subscribe(_ => RefreshGhostNotes());
             this.WhenAnyValue(x => x.Part)
+                .OfType<UVoicePart>()
                 .Subscribe(_ => RefreshGhostNotes());
         }
 
@@ -216,6 +228,75 @@ namespace OpenUtau.App.Controls {
             if (TrackHeight < 10 || note.lyric.Length == 0) {
                 return;
             }
+            if (ShowPhonemizerTags && TrackHeight >= 20) {
+                string currentOver = note.PhonemizerOverride ?? "";
+                bool isCurrentDefault = string.IsNullOrEmpty(currentOver) || currentOver.Equals("Default", StringComparison.OrdinalIgnoreCase);
+                string currentPh = isCurrentDefault ? "Default" : currentOver;
+                string prevPh = "Default"; 
+                if (note.Prev != null) {
+                    string prevOver = note.Prev.PhonemizerOverride ?? "";
+                    bool isPrevDefault = string.IsNullOrEmpty(prevOver) || prevOver.Equals("Default", StringComparison.OrdinalIgnoreCase);
+                    prevPh = isPrevDefault ? "Default" : prevOver;
+                }
+                bool isContinuation = note.lyric.StartsWith("+");
+                bool isTransition = !isContinuation && ((note.Prev == null && !isCurrentDefault) || (note.Prev != null && currentPh != prevPh));
+                
+                if (isTransition) {
+                    var badgeBrush = selectedNotes.Contains(note)
+                        ? (note.Error ? ThemeManager.AccentBrush2Semi : ThemeManager.AccentBrush2)
+                        : (note.Error ? ThemeManager.AccentBrush1Semi : ThemeManager.AccentBrush1);
+
+                    if (isCurrentDefault) {
+                        // Due to the limitation, we'll display a dot to inndicate
+                        // the transition to default phonemizer instead of showing language tag
+                        double boxWidth = 16; 
+                        double boxHeight = 16;
+                        double dotRadius = 3;
+                        Avalonia.Rect boxRect = new Avalonia.Rect(
+                            leftTop.X + 2, 
+                            leftTop.Y - boxHeight - 4, 
+                            boxWidth, 
+                            boxHeight
+                        );
+                        Avalonia.Point center = new Avalonia.Point(
+                            boxRect.X + boxWidth / 2, 
+                            boxRect.Y + boxHeight / 2
+                        );
+                        context.DrawRectangle(badgeBrush, null, boxRect, 3, 3);
+                        context.DrawEllipse(Brushes.White, null, center, dotRadius, dotRadius);
+                        
+                    } else {
+                        var factory = OpenUtau.Api.PhonemizerFactory.Get(currentPh) ?? OpenUtau.Api.PhonemizerFactory.GetAll().FirstOrDefault(f => f.name == currentPh || (currentPh.Length > 0 && f.name.EndsWith(currentPh)));
+                        string displayLang = factory?.language ?? "";
+                        if (string.IsNullOrEmpty(displayLang) && !string.IsNullOrEmpty(factory?.tag)) {
+                            displayLang = factory.tag.Split(' ')[0]; 
+                        }
+                        if (string.IsNullOrEmpty(displayLang)) {
+                            string rawName = currentPh.Split('.').Last().Replace("Phonemizer", "");
+                            displayLang = System.Text.RegularExpressions.Regex.Replace(rawName, "([A-Z])", " $1").Trim();
+                            if (displayLang.Length > 5) {
+                                displayLang = displayLang.Substring(0, 5);
+                            }
+                        }
+                        if (!string.IsNullOrEmpty(displayLang)) {
+                            var langLayout = TextLayoutCache.Get(displayLang, Avalonia.Media.Brushes.White, 10);
+                            double paddingX = 3;
+                            double paddingY = 1.5;
+                            Avalonia.Rect badgeRect = new Avalonia.Rect(
+                                leftTop.X + 2, 
+                                leftTop.Y - langLayout.Height - (paddingY * 2) - 4, 
+                                langLayout.Width + (paddingX * 2), 
+                                langLayout.Height + (paddingY * 2)
+                            );
+                            context.DrawRectangle(badgeBrush, null, badgeRect, 3, 3);
+                            Avalonia.Point textPos = new Avalonia.Point(badgeRect.X + paddingX, badgeRect.Y + paddingY);
+                            using (var state = context.PushTransform(Avalonia.Matrix.CreateTranslation(textPos.X, textPos.Y))) {
+                                langLayout?.Draw(context, new Avalonia.Point());
+                            }
+                        }
+                    }
+                }
+            }
             string displayLyric = note.lyric;
             int txtsize = 12;
             var textLayout = TextLayoutCache.Get(displayLyric, Brushes.White, txtsize);
@@ -265,7 +346,8 @@ namespace OpenUtau.App.Controls {
             double p0Tick = project.timeAxis.MsPosToTickPos(note.PositionMs + pts[0].X) - viewModel.Part.position;
             double p0Tone = note.AdjustedTone + pts[0].Y / 10.0;
             Point p0 = viewModel.TickToneToPoint(p0Tick, p0Tone - 0.5);
-            points.Clear();
+            Point p_1 = p0;
+            var points = new Points();          
             points.Add(p0);
 
             var brush = note.pitch.snapFirst ? ThemeManager.AccentBrush3 : null;
@@ -278,7 +360,28 @@ namespace OpenUtau.App.Controls {
                 double p1Tick = project.timeAxis.MsPosToTickPos(note.PositionMs + pts[i].X) - viewModel.Part.position;
                 double p1Tone = note.AdjustedTone + pts[i].Y / 10.0;
                 Point p1 = viewModel.TickToneToPoint(p1Tick, p1Tone - 0.5);
+                CubicSplineSegment? curve = null;
 
+                if (pts.Count > 2 && pts[i - 1].shape == PitchPointShape.sp) {
+                    var p2 = p1;
+                    if (i == 1) {
+                        if (note.pitch.data[0].X > 0) {
+                            p_1 = viewModel.TickToneToPoint(note.position, p0Tone - 0.5);
+                        }
+                    }
+                    if (i < pts.Count - 1) {
+                        double p2Tick = project.timeAxis.MsPosToTickPos(note.PositionMs + pts[i + 1].X) - viewModel.Part.position;
+                        double p2Tone = note.AdjustedTone + pts[i + 1].Y / 10.0;
+                        p2 = viewModel.TickToneToPoint(p2Tick, p2Tone - 0.5);
+                    } else if (pts[i].X < note.DurationMs) {
+                        p2 = viewModel.TickToneToPoint(note.End, note.AdjustedTone - 0.5);
+                    }
+                    curve = new CubicSplineSegment(
+                                p_1.X, p_1.Y,
+                                p0.X, p0.Y,
+                                p1.X, p1.Y,
+                                p2.X, p2.Y);
+                }
                 // Draw arc
                 double x0 = p0.X;
                 double y0 = p0.Y;
@@ -290,19 +393,20 @@ namespace OpenUtau.App.Controls {
                     points.Add(new Point(x0, y0));
                     while (x0 < p1.X) {
                         x1 = Math.Min(x1 + 4, p1.X);
-                        y1 = MusicMath.InterpolateShape(p0.X, p1.X, p0.Y, p1.Y, x1, pts[i - 1].shape);
+                        y1 = curve?.GetY(x1) ?? MusicMath.InterpolateShape(p0.X, p1.X, p0.Y, p1.Y, x1, pts[i - 1].shape);
                         points.Add(new Point(x1, y1));
                         x0 = x1;
                         y0 = y1;
                     }
                 }
+                p_1 = p0;
                 p0 = p1;
                 using (var state = context.PushTransform(Matrix.CreateTranslation(p0.X, p0.Y))) {
                     context.DrawGeometry(null, pen, pointGeometry);
                 }
             }
-            polylineGeometry.Points = points;
-            context.DrawGeometry(null, pen, polylineGeometry);
+            var geometry = new PolylineGeometry(points, false);
+            context.DrawGeometry(null, pen, geometry);
         }
 
         private void RenderVibrato(UNote note, NotesViewModel viewModel, DrawingContext context) {
@@ -315,15 +419,15 @@ namespace OpenUtau.App.Controls {
             float nPeriod = (float)viewModel.Project.timeAxis.TicksBetweenMsPos(note.PositionMs, note.PositionMs + vibrato.period) / note.duration;
             float nPos = vibrato.NormalizedStart;
             var point = vibrato.Evaluate(nPos, nPeriod, note);
-            points.Clear();
+            var points = new Points();
             points.Add(viewModel.TickToneToPoint(point.X, point.Y - 0.5));
             while (nPos < 1) {
                 nPos = Math.Min(1, nPos + nPeriod / 16);
                 point = vibrato.Evaluate(nPos, nPeriod, note);
                 points.Add(viewModel.TickToneToPoint(point.X, point.Y - 0.5));
             }
-            polylineGeometry.Points = points;
-            context.DrawGeometry(null, pen, polylineGeometry);
+            var geometry = new PolylineGeometry(points, false);
+            context.DrawGeometry(null, pen, geometry);
         }
 
         private readonly Geometry vibratoIcon = Geometry.Parse("M-6.5 1 L-6 1.5 L-4.5 0 L-2 2.5 L0.5 0 L3 2.5 L6.5 -1 L6 -1.5 L4.5 0 L2 -2.5 L-0.5 0 L-3 -2.5 Z");
@@ -380,14 +484,14 @@ namespace OpenUtau.App.Controls {
                     int pitchStart = phrase.position - phrase.leading - Part.position;
                     int startIdx = (int)Math.Max(0, (leftTick - pitchStart) / 5);
                     int endIdx = (int)Math.Min(phrase.pitches.Length, (rightTick - pitchStart) / 5 + 1);
-                    points.Clear();
+                    var points = new Points();
                     for (int i = startIdx; i < endIdx; ++i) {
                         int t = pitchStart + i * 5;
                         float p = phrase.pitches[i];
                         points.Add(viewModel.TickToneToPoint(t, p / 100 - 0.5));
                     }
-                    polylineGeometry.Points = points;
-                    context.DrawGeometry(null, pen, polylineGeometry);
+                    var geometry = new PolylineGeometry(points, false);
+                    context.DrawGeometry(null, pen, geometry);
                 }
             }
         }

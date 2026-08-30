@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using OpenUtau.Api;
 using OpenUtau.Classic;
+using OpenUtau.Core.Editing;
 using OpenUtau.Core.Lib;
 using OpenUtau.Core.Ustx;
 using OpenUtau.Core.Util;
@@ -30,6 +31,8 @@ namespace OpenUtau.Core {
         private TaskScheduler mainScheduler;
 
         public int playPosTick = 0;
+        public int rangeStartTick = 0;
+        public int rangeEndTick = 0;
 
         public TaskScheduler MainScheduler => mainScheduler;
         public Action<Action> PostOnUIThread { get; set; }
@@ -37,9 +40,11 @@ namespace OpenUtau.Core {
         public PhonemizerFactory[] PhonemizerFactories { get; private set; }
         public UProject Project { get; private set; }
         public bool HasOpenUndoGroup => undoGroup != null;
-        public List<UPart> PartsClipboard { get; set; }
-        public List<UNote> NotesClipboard { get; set; }
+        public List<UPart>? PartsClipboard { get; set; }
+        public List<UNote>? NotesClipboard { get; set; }
+        public CurveSelection? CurvesClipboard { get; set; }
         internal PhonemizerRunner PhonemizerRunner { get; private set; }
+        public List<Type> ExternalBatchEditTypes { get; private set; } = new List<Type>();
 
         public void Initialize(Thread mainThread, TaskScheduler mainScheduler) {
             AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler((sender, args) => {
@@ -75,7 +80,7 @@ namespace OpenUtau.Core {
                 if (File.Exists(oldBuiltin)) {
                     File.Delete(oldBuiltin);
                 }
-                files.AddRange(Directory.EnumerateFiles(PathManager.Inst.PluginsPath, "*.dll", SearchOption.AllDirectories));
+                SearchPluginInternal(PathManager.Inst.PluginsPath, files);
             } catch (Exception e) {
                 Log.Error(e, "Failed to search plugins.");
             }
@@ -91,6 +96,13 @@ namespace OpenUtau.Core {
                         if (!type.IsAbstract && type.IsSubclassOf(typeof(Phonemizer))) {
                             PhonemizerFactory.Get(type);
                         }
+                        if (Path.GetFileName(file) != kBuiltin
+                            && typeof(BatchEdit).IsAssignableFrom(type)
+                            && !type.IsInterface
+                            && !type.IsAbstract
+                            && type.GetConstructor(Type.EmptyTypes) != null) {
+                            ExternalBatchEditTypes.Add(type);
+                        }
                     }
                 } catch (Exception e) {
                     Log.Warning(e, $"Failed to load {file}.");
@@ -105,6 +117,16 @@ namespace OpenUtau.Core {
             PhonemizerFactory.BuildList();
             stopWatch.Stop();
             Log.Information($"Search all plugins: {stopWatch.Elapsed}");
+        }
+        private void SearchPluginInternal(string path, List<string> result) {
+            if (Directory.EnumerateFiles(path, "plugin.txt", SearchOption.TopDirectoryOnly).Any()) {
+                return;
+            }
+            result.AddRange(Directory.EnumerateFiles(path, "*.dll", SearchOption.TopDirectoryOnly));
+            var directories = Directory.EnumerateDirectories(path, "*", SearchOption.TopDirectoryOnly);
+            foreach (var directory in directories) {
+                SearchPluginInternal(directory, result);
+            }
         }
 
         #region Command Queue
@@ -206,8 +228,13 @@ namespace OpenUtau.Core {
                     autosavedPoint = null;
                     Project = notification.project;
                     playPosTick = 0;
+                    rangeStartTick = 0;
+                    rangeEndTick = 0;
                 } else if (cmd is SetPlayPosTickNotification setPlayPosTickNotif) {
                     playPosTick = setPlayPosTickNotif.playPosTick;
+                } else if (cmd is SetRangeSelectionNotification setRange) {
+                    rangeStartTick = setRange.startTick;
+                    rangeEndTick = setRange.endTick;
                 } else if (cmd is SingersChangedNotification) {
                     SingerManager.Inst.SearchAllSingers();
                 } else if (cmd is ValidateProjectNotification) {
@@ -244,12 +271,12 @@ namespace OpenUtau.Core {
             }
         }
 
-        public void StartUndoGroup(bool deferValidate = false) {
+        public void StartUndoGroup(string? nameKey = null, bool deferValidate = false) {
             if (undoGroup != null) {
                 Log.Error("undoGroup already started");
                 EndUndoGroup();
             }
-            undoGroup = new UCommandGroup(deferValidate);
+            undoGroup = new UCommandGroup(nameKey, deferValidate);
             Log.Information("undoGroup started");
         }
 
@@ -322,6 +349,25 @@ namespace OpenUtau.Core {
             }
             undoQueue.AddToBack(group);
             ExecuteCmd(new PreRenderNotification());
+        }
+
+        public bool GetUndoState(out string? key) {
+            key = null;
+            if (undoQueue.Count > 0) {
+                key = undoQueue.Last().NameKey;
+                return true;
+            } else {
+                return false;
+            }
+        }
+        public bool GetRedoState(out string? key) {
+            key = null;
+            if (redoQueue.Count > 0) {
+                key = redoQueue.Last().NameKey;
+                return true;
+            } else {
+                return false;
+            }
         }
 
         # endregion

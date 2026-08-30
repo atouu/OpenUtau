@@ -83,7 +83,7 @@ namespace OpenUtau.Core {
         public string LogsPath => Path.Combine(DataPath, "Logs");
         public string LogFilePath => Path.Combine(DataPath, "Logs", "log.txt");
         public string PrefsFilePath => Path.Combine(DataPath, "prefs.json");
-        public string ThemeFilePath => Path.Combine(DataPath, "theme.yaml");
+        public string ThemesPath => Path.Combine(DataPath, "Themes");
         public string NotePresetsFilePath => Path.Combine(DataPath, "notepresets.json");
         public string BackupsPath => Path.Combine(DataPath, "Backups");
 
@@ -141,6 +141,16 @@ namespace OpenUtau.Core {
                     Log.Error(e, $"Failed to delete dir {dir}");
                 }
             }
+            OpenUtau.Core.PlaybackManager.Inst.StopPlayback();
+            OpenUtau.Core.PlaybackManager.Inst.LiveWaveformCache.Clear();
+            if (OpenUtau.Core.DocManager.Inst.Project != null) {
+                foreach (var part in OpenUtau.Core.DocManager.Inst.Project.parts) {
+                    if (part is OpenUtau.Core.Ustx.UVoicePart voicePart) {
+                        voicePart.Mix = null!; 
+                    }
+                }
+            }
+            OpenUtau.Core.DocManager.Inst.ExecuteCmd(new OpenUtau.Core.WaveformReadyNotification());
         }
 
         readonly static string[] sizes = { "B", "KB", "MB", "GB", "TB", "PB", "EB" };
