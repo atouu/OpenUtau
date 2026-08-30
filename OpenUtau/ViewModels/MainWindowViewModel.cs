@@ -75,7 +75,7 @@ namespace OpenUtau.App.ViewModels {
         public bool ProjectSaved => !string.IsNullOrEmpty(DocManager.Inst.Project.FilePath) && DocManager.Inst.Project.Saved;
         public string AppVersion => $"OpenUtau v{Assembly.GetEntryAssembly()
             ?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
-            ?.InformationalVersion}"
+            ?.InformationalVersion}";
         [Reactive] public partial double Progress { get; set; }
         [Reactive] public partial string ProgressText { get; set; }
         [Reactive] public partial bool ShowPianoRoll { get; set; }
