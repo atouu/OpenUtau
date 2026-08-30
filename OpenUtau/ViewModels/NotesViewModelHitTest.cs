@@ -267,7 +267,9 @@ namespace OpenUtau.App.ViewModels {
                 return null;
             }
             double tick = viewModel.PointToTick(point);
-            var phrase = viewModel.Part.renderPhrases.FirstOrDefault(p => p.end >= tick);
+            double absTick = tick + viewModel.Part.position;
+
+            var phrase = viewModel.Part.renderPhrases.FirstOrDefault(p => p.end >= absTick);
             if (phrase == null) {
                 phrase = viewModel.Part.renderPhrases.Last();
             }
@@ -275,7 +277,8 @@ namespace OpenUtau.App.ViewModels {
                 return null;
             }
             var curve = phrase.pitchesBeforeDeviation;
-            var pitchIndex = (int)Math.Round((tick - phrase.position + phrase.leading) / 5);
+            int phraseStartRel = phrase.position - viewModel.Part.position;
+            var pitchIndex = (int)Math.Round((tick - phraseStartRel + phrase.leading) / 5.0);
             pitchIndex = Math.Clamp(pitchIndex, 0, curve.Length - 1);
             return curve[pitchIndex];
         }
@@ -386,6 +389,7 @@ namespace OpenUtau.App.ViewModels {
                     return result;
                 }
                 // p4 Overlap
+                if (phoneme.Next == null || phoneme.Next.position != phoneme.End) continue;
                 int p4Tick = timeAxis.MsPosToTickPos(phoneme.PositionMs + phoneme.envelope.data[4].X) - viewModel.Part.position;
                 double p4x = viewModel.TickToneToPoint(p4Tick, 0).X;
                 point = new Point(p4x, 60 - phoneme.envelope.data[4].Y * 0.24 - 1);

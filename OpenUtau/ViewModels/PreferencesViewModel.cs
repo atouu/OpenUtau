@@ -71,6 +71,10 @@ namespace OpenUtau.App.ViewModels {
         [Reactive] public GpuInfo OnnxGpu { get; set; }
         public bool ShowOnnxGpu => OnnxRunner == "DirectML";
 
+        // GAME backend (onnx / ggml)
+        public string[] GameBackendOptions { get; } = [ "ONNX", "GGML" ];
+        [Reactive] public string GameBackend { get; set; }
+
         // Appearance
         [Reactive] public string ThemeName { get; set; }
         [Reactive] public int DegreeStyle { get; set; }
@@ -78,6 +82,7 @@ namespace OpenUtau.App.ViewModels {
         [Reactive] public bool ShowPortrait { get; set; }
         [Reactive] public bool ShowIcon { get; set; }
         [Reactive] public bool ShowGhostNotes { get; set; }
+        [Reactive] public bool DetachPianoRoll { get; set; }
         public bool ThemeEditable => ThemeName is not ("Light" or "Dark")
             && !Colors.CustomTheme.IsPackageTheme(ThemeName);
         public List<string> ThemeItems => ThemeManager.GetAvailableThemes();
@@ -99,6 +104,7 @@ namespace OpenUtau.App.ViewModels {
         [Reactive] public int DiffSingerStepsPitch { get; set; }
         [Reactive] public double DiffSingerDepth { get; set; }
         [Reactive] public bool DiffSingerTensorCache { get; set; }
+        [Reactive] public bool DiffSingerVarianceLocalPitchPatch { get; set; }
         [Reactive] public bool DiffSingerLangCodeHide { get; set; }
 
         // Advanced
@@ -147,11 +153,18 @@ namespace OpenUtau.App.ViewModels {
                OnnxRunnerOptions[0] : Preferences.Default.OnnxRunner;
             OnnxGpuOptions = Onnx.getGpuInfo();
             OnnxGpu = OnnxGpuOptions.FirstOrDefault(x => x.deviceId == Preferences.Default.OnnxGpu, OnnxGpuOptions[0]);
+            // GAME backend: ONNX is the default, GGML is available when installed.
+            // The options list always includes both so the ComboBox UX is stable.
+            GameBackend = Preferences.Default.GameBackend switch {
+                "ggml" => "GGML",
+                _ => "ONNX",  // default / empty / unrecognized all map to ONNX
+            };
             DiffSingerDepth = Preferences.Default.DiffSingerDepth * 100;
             DiffSingerSteps = Preferences.Default.DiffSingerSteps;
             DiffSingerStepsVariance = Preferences.Default.DiffSingerStepsVariance;
             DiffSingerStepsPitch = Preferences.Default.DiffSingerStepsPitch;
             DiffSingerTensorCache = Preferences.Default.DiffSingerTensorCache;
+            DiffSingerVarianceLocalPitchPatch = Preferences.Default.DiffSingerVarianceLocalPitchPatch;
             DiffSingerLangCodeHide = Preferences.Default.DiffSingerLangCodeHide;
             SkipRenderingMutedTracks = Preferences.Default.SkipRenderingMutedTracks;
             ThemeName = Preferences.Default.ThemeName;
@@ -160,6 +173,7 @@ namespace OpenUtau.App.ViewModels {
             ShowPortrait = Preferences.Default.ShowPortrait;
             ShowIcon = Preferences.Default.ShowIcon;
             ShowGhostNotes = Preferences.Default.ShowGhostNotes;
+            DetachPianoRoll = Preferences.Default.DetachPianoRoll;
             Beta = Preferences.Default.Beta;
             LyricsHelper = LyricsHelpers.FirstOrDefault(option => option.klass.Equals(ActiveLyricsHelper.Inst.GetPreferred()));
             LyricsHelperBrackets = Preferences.Default.LyricsHelperBrackets;
@@ -294,6 +308,12 @@ namespace OpenUtau.App.ViewModels {
                     Preferences.Save();
                     MessageBus.Current.SendMessage(new PianorollRefreshEvent("Part"));
                 });
+            this.WhenAnyValue(vm => vm.DetachPianoRoll)
+                .Subscribe(detachPianoRoll => {
+                    Preferences.Default.DetachPianoRoll = detachPianoRoll;
+                    Preferences.Save();
+                    MessageBus.Current.SendMessage(new PianorollRefreshEvent("Attachment"));
+                });
             this.WhenAnyValue(vm => vm.Beta)
                 .Skip(1)
                 .Subscribe(beta => {
@@ -343,6 +363,12 @@ namespace OpenUtau.App.ViewModels {
                 .Skip(1)
                 .Subscribe(index => {
                     Preferences.Default.OnnxGpu = index.deviceId;
+                    Preferences.Save();
+                });
+            this.WhenAnyValue(vm => vm.GameBackend)
+                .Skip(1)
+                .Subscribe(index => {
+                    Preferences.Default.GameBackend = index == "GGML" ? "ggml" : "onnx";
                     Preferences.Save();
                 });
             this.WhenAnyValue(vm => vm.RememberMid)
@@ -397,6 +423,11 @@ namespace OpenUtau.App.ViewModels {
                 .Skip(1)
                 .Subscribe(useCache => {
                     Preferences.Default.DiffSingerTensorCache = useCache;
+                    Preferences.Save();
+                });
+            this.WhenAnyValue(vm => vm.DiffSingerVarianceLocalPitchPatch)
+                .Subscribe(useLocalPatch => {
+                    Preferences.Default.DiffSingerVarianceLocalPitchPatch = useLocalPatch;
                     Preferences.Save();
                 });
             this.WhenAnyValue(vm => vm.DiffSingerLangCodeHide)
