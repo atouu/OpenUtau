@@ -89,21 +89,30 @@ namespace OpenUtau.App.Views {
         }
 
         void ResetWinePath(object sender, RoutedEventArgs e) {
-            ((PreferencesViewModel)DataContext!).SetWinePath(string.Empty);
+            viewModel!.SetWinePath(string.Empty);
         }
 
         async void SelectWinePath(object sender, RoutedEventArgs e) {
-            var path = await FilePicker.OpenFile(this, "prefs.advanced.winepath", FilePicker.UnixExecutable);
+            var path = await FilePicker.OpenFile(this, "prefs.advanced.winepath",
+                            [ FilePicker.UnixExecutable, FilePicker.APP ]);
+
             if (string.IsNullOrEmpty(path)) {
                 return;
             }
-            if (File.Exists(path)) {
-                ((PreferencesViewModel)DataContext!).SetWinePath(path);
+            if (OS.IsMacOS() && Directory.Exists(path)
+                && Path.GetFileName(path).EndsWith(".app"))
+            {
+                var binPath = Path.Join(path, "Contents", "Resources", "wine", "bin", "wine");
+                if (File.Exists(binPath)) {
+                    viewModel!.SetWinePath(binPath);
+                }
+            } else if (File.Exists(path)) {
+                viewModel!.SetWinePath(path);
             }
         }
 
         void DetectWinePath(object sender, RoutedEventArgs e) {
-            string[] wineNames = { "wine", "wine64", "wine32", "wine32on64" };
+            string[] wineNames = [ "wine", "wine64", "wine32", "wine32on64" ];
             string winePath = string.Empty;
 
             foreach (string wineName in wineNames) {
@@ -117,7 +126,7 @@ namespace OpenUtau.App.Views {
                 return;
             }
 
-            ((PreferencesViewModel)DataContext!).SetWinePath(winePath);
+            viewModel!.SetWinePath(winePath);
         }
 
         void OpenCustomThemeEditor(object sender, RoutedEventArgs e) {
