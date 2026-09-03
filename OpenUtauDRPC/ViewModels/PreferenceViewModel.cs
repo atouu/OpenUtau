@@ -1,16 +1,16 @@
 using OpenUtau.Core;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.SourceGenerators;
 
 namespace OpenUtauDRPC.ViewModels {
 
-    public class PreferencesViewModel : ReactiveObject {
-        [Reactive] public string ApplicationId { get; set; }
+    public partial class PreferencesViewModel : ReactiveObject {
+        [Reactive] private string _applicationId;
         public Dictionary<string, string> SingerIconUrls => new(Preferences.Default.SingerIconUrls);
         public IEnumerable<string> Singers => SingerManager.Inst.Singers.Values.Select(v => v.Name);
 
-        [Reactive] public string SelectedSinger { get; set; }
-        [Reactive] public string SelectedSingerIconUrl { get; set; }
+        [Reactive] private string _selectedSinger;
+        [Reactive] private string _selectedSingerIconUrl;
 
         public PreferencesViewModel() {
             ApplicationId = Preferences.Default.ApplicationId;
