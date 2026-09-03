@@ -21,7 +21,7 @@ namespace OpenUtau.Core.Util {
         public static void Save() {
             try {
                 File.WriteAllText(PathManager.Inst.PrefsFilePath,
-                    Json.Serialize(Default),
+                    Json.Serialize(Default, Json.WriteIndentedOptions),
                     Encoding.UTF8);
             } catch (Exception e) {
                 Log.Error(e, "Failed to save prefs.");
