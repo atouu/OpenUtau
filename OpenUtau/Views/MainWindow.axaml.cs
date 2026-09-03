@@ -957,51 +957,32 @@ namespace OpenUtau.App.Views {
             if (ProjectExts.Contains(FirstExt) || AudioExts.Contains(FirstExt)) {
                 var projectFiles = supportedFiles.Where(file => ProjectExts.Contains(Path.GetExtension(file).ToLower())).ToArray();
                 if (projectFiles.Length > 0) {
-                    bool openAsProject = true;
+                    bool asNewProject = true;
 
                     if (viewModel.Page == 1) {
-                        bool cancelled = true;
-                        var openAs = new MessageBox() {
-                            Title = ThemeManager.GetString("dialogs.projectimport.caption"),
-                            Text = {
-                                Text = $"{ThemeManager.GetString("dialogs.projectimport.message")}\n{string.Join("\n", projectFiles)}"
+                        var cancelTcs = new TaskCompletionSource<bool>();
+                        var openAs = new ImportProjectDialog(projectFiles) {
+                            onFinish = async res => {
+                                bool cancelled = res == ImportProjectDialog.Result.Cancelled;
+                                if (!cancelled) {
+                                    asNewProject = res == ImportProjectDialog.Result.AsNewProject;
+                                    if (asNewProject && await AskIfSaveAndContinue() == false) {
+                                        cancelled = true;
+                                        return;
+                                    }
+                                }
+                                cancelTcs.SetResult(cancelled);
                             }
                         };
 
-                        var btnAsProject = new Button() {
-                            Content = ThemeManager.GetString("dialogs.projectimport.asproject")
-                        };
-                        btnAsProject.Click += async (s, e) => {
-                            await AskIfSaveAndContinue();
-                            cancelled = false;
-                            openAsProject = true;
-                            openAs.Close();
-                        };
-                        openAs.Buttons.Children.Add(btnAsProject);
+                        openAs.Show(this);
 
-                        var btnAsTracks = new Button() {
-                            Content = ThemeManager.GetString("dialogs.projectimport.astracks")
-                        };
-                        btnAsTracks.Click += (s, e) => {
-                            cancelled = false;
-                            openAsProject = false;
-                            openAs.Close();
-                        };
-                        openAs.Buttons.Children.Add(btnAsTracks);
-
-                        var tcs = new TaskCompletionSource();
-                        openAs.Closed += delegate {
-                            if (cancelled) {
-                                return;
-                            }
-                            tcs.SetResult();
-                        };
-                        openAs.Show();
-
-                        await tcs.Task;
+                        if (await cancelTcs.Task) {
+                            return;
+                        }
                     }
 
-                    if (openAsProject) {
+                    if (asNewProject) {
                         try {
                             viewModel.OpenProject(projectFiles);
                         } catch (Exception e) {
