@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using OpenUtau.Core.Ustx;
 using OpenUtau.Core.Format;
+using OpenUtau.Core.DiffSinger;
 
 namespace OpenUtau.Core.Editing {
     public class AddTailNote : BatchEdit {
@@ -32,7 +33,7 @@ namespace OpenUtau.Core.Editing {
             if (toAdd.Count == 0) {
                 return;
             }
-            docManager.StartUndoGroup(true);
+            docManager.StartUndoGroup("command.batch.note", true);
             foreach (var note in toAdd) {
                 note.lyric = lyric;
                 docManager.ExecuteCmd(new AddNoteCommand(part, note));
@@ -63,7 +64,7 @@ namespace OpenUtau.Core.Editing {
             if (toRemove.Count == 0) {
                 return;
             }
-            docManager.StartUndoGroup(true);
+            docManager.StartUndoGroup("command.batch.note", true);
             foreach (var note in toRemove) {
                 note.lyric = lyric;
                 docManager.ExecuteCmd(new RemoveNoteCommand(part, note));
@@ -108,7 +109,7 @@ namespace OpenUtau.Core.Editing {
             if (toAdd.Count == 0) {
                 return;
             }
-            docManager.StartUndoGroup(true);
+            docManager.StartUndoGroup("command.batch.note", true);
             foreach (var note in toAdd) {
                 note.lyric = lyric;
                 docManager.ExecuteCmd(new AddNoteCommand(part, note));
@@ -130,7 +131,7 @@ namespace OpenUtau.Core.Editing {
 
         public void Run(UProject project, UVoicePart part, List<UNote> selectedNotes, DocManager docManager) {
             var notes = selectedNotes.Count > 0 ? selectedNotes : part.notes.ToList();
-            docManager.StartUndoGroup(true);
+            docManager.StartUndoGroup("command.batch.note", true);
             foreach (var note in notes) {
                 docManager.ExecuteCmd(new MoveNoteCommand(part, note, 0, deltaNoteNum));
             }
@@ -151,7 +152,7 @@ namespace OpenUtau.Core.Editing {
 
         public void Run(UProject project, UVoicePart part, List<UNote> selectedNotes, DocManager docManager) {
             var notes = selectedNotes.Count > 0 ? selectedNotes : part.notes.ToList();
-            docManager.StartUndoGroup(true);
+            docManager.StartUndoGroup("command.batch.note", true);
             foreach (var note in notes) {
                 int pos = note.position;
                 int end = note.End;
@@ -180,7 +181,7 @@ namespace OpenUtau.Core.Editing {
         public void Run(UProject project, UVoicePart part, List<UNote> selectedNotes, DocManager docManager) {
             var notes = selectedNotes.Count > 0 ? selectedNotes : part.notes.ToList();
             notes.Sort((a, b) => a.position.CompareTo(b.position));
-            docManager.StartUndoGroup(true);
+            docManager.StartUndoGroup("command.batch.note", true);
             for (int i = 0; i < notes.Count - 1; i++) {
                 docManager.ExecuteCmd(new ResizeNoteCommand(part, notes[i], notes[i + 1].position - notes[i].position - notes[i].duration));
             }
@@ -207,7 +208,7 @@ namespace OpenUtau.Core.Editing {
             if (notes.Count == 0) {
                 return;
             }
-            docManager.StartUndoGroup();
+            docManager.StartUndoGroup("command.batch.note");
             var currentNote = notes[0];
             foreach (var note in notes.Skip(1)) {
                 if (note.position == currentNote.position) {
@@ -263,11 +264,11 @@ namespace OpenUtau.Core.Editing {
             }
             int offset = left - minPosition - part.position;
             notes.ForEach(note => note.position += offset);
-            DocManager.Inst.StartUndoGroup();
+            DocManager.Inst.StartUndoGroup("command.batch.note");
             DocManager.Inst.ExecuteCmd(new AddNoteCommand(part, notes));
             int minDurTick = part.GetMinDurTick(project);
             if (part.Duration < minDurTick) {
-                DocManager.Inst.ExecuteCmd(new ResizePartCommand(project, part, minDurTick - part.Duration, false));
+                DocManager.Inst.ExecuteCmd(new ResizeVoicePartCommand(project, part, minDurTick - part.Duration, false));
             }
             DocManager.Inst.EndUndoGroup();
         }
@@ -284,7 +285,7 @@ namespace OpenUtau.Core.Editing {
 
         public void Run(UProject project, UVoicePart part, List<UNote> selectedNotes, DocManager docManager) {
             var pinyinResult = BaseChinesePhonemizer.Romanize(selectedNotes.Select(note => note.lyric));
-            docManager.StartUndoGroup(true);
+            docManager.StartUndoGroup("command.batch.lyric", true);
             foreach (var t in Enumerable.Zip(selectedNotes, pinyinResult,
                 (note, pinyin) => Tuple.Create(note, pinyin))) {
                 docManager.ExecuteCmd(new ChangeNoteLyricCommand(part, t.Item1, t.Item2));
@@ -308,28 +309,18 @@ namespace OpenUtau.Core.Editing {
             if (notes.Count == 0) {
                 return;
             }
-            docManager.StartUndoGroup(true);
+            docManager.StartUndoGroup("command.batch.note", true);
             var track = project.tracks[part.trackNo];
             foreach (var note in notes) {
                 foreach (UPhoneme phoneme in part.phonemes) {
                     if (phoneme.Parent == note && phoneme.Prev != null && phoneme.PositionMs == phoneme.Prev.EndMs) {
-
-                        double consonantStretch = Math.Pow(2f, 1.0f - phoneme.GetExpression(project, track, Format.Ustx.VEL).Item1 / 100f);
-                        double maxPreutter = phoneme.oto.Preutter * consonantStretch;
-                        double prevDur = phoneme.Prev.DurationMs;
-                        double preutter = phoneme.preutter;
-
-                        if (maxPreutter > prevDur * 0.9f) {
-                            maxPreutter = prevDur * 0.9f;
-                        }
-                        if (maxPreutter > phoneme.preutter) {
-                            docManager.ExecuteCmd(new PhonemePreutterCommand(part, note, phoneme.index, (float)(maxPreutter - phoneme.autoPreutter)));
-                            preutter = maxPreutter;
-                        }
-
-                        var overlap = preutter * ratio;
-                        if (overlap > phoneme.autoOverlap) {
-                            docManager.ExecuteCmd(new PhonemeOverlapCommand(part, note, phoneme.index, (float)(overlap - phoneme.autoOverlap)));
+                        var max = Math.Min(phoneme.maxOtoPreutter, phoneme.Prev.DurationMs - 5);
+                        docManager.ExecuteCmd(new PhonemePreutterCommand(part, note, phoneme.index, phoneme, (float)(max - phoneme.autoPreutter)));
+                        if (phoneme.autoOverlap > 0) {
+                            var overlap = max * ratio;
+                            if (overlap > phoneme.autoOverlap) {
+                                docManager.ExecuteCmd(new PhonemeOverlapCommand(part, note, phoneme.index, phoneme, (float)(overlap - phoneme.autoOverlap)));
+                            }
                         }
                     }
                 }
@@ -351,7 +342,7 @@ namespace OpenUtau.Core.Editing {
             if (notes.Count == 0) {
                 return;
             }
-            docManager.StartUndoGroup(true);
+            docManager.StartUndoGroup("command.batch.note", true);
             const int maxTick = 20;
             int delta;
             Random random = new Random();
@@ -390,7 +381,7 @@ namespace OpenUtau.Core.Editing {
             if (notes.Count == 0) {
                 return;
             }
-            docManager.StartUndoGroup(true);
+            docManager.StartUndoGroup("command.batch.note", true);
             const int maxTick = 20 ;
             Random random = new Random();
             foreach (var note in notes) {
@@ -432,7 +423,7 @@ namespace OpenUtau.Core.Editing {
             if (notes.Count == 0) {
                 return;
             }
-            docManager.StartUndoGroup(true);
+            docManager.StartUndoGroup("command.batch.note", true);
             Random random = new Random();
             foreach (var note in notes) {
                 if (random.Next(2) == 0) { // +
@@ -488,46 +479,49 @@ namespace OpenUtau.Core.Editing {
             var commands = new List<SetCurveCommand>();
             for (int ph_i = phrases.Count() - 1; ph_i >= 0; ph_i--) {
                 var phrase = phrases[ph_i];
-                var result = renderer.LoadRenderedPitch(phrase);
+                var result = renderer.LoadRenderedPitch(phrase, positions);
                 if (result == null) {
                     continue;
                 }
-                int? lastX = null;
-                int? lastY = null;
                 // TODO: Optimize interpolation and command.
                 if (cancellationToken.IsCancellationRequested) break;
                 // Take the first negative tick before start and the first tick after end for each segment;
                 // Reverse traversal, so that when the score slices are too close, priority is given to covering the consonant pitch of the next segment, reducing the impact on vowels.
-                for (int i = 0; i < result.tones.Length; i++) {
-                    if (result.tones[i] < 0) {
-                        continue;
-                    }
-                    int x = phrase.position - part.position + (int)result.ticks[i];
-                    if (result.ticks[i] < 0) {
-                        if (i + 1 < result.ticks.Length && result.ticks[i + 1] > 0) { } else
+                foreach (var (start, end) in DiffSingerRetake.GetRetakeFrameRanges(
+                    result.retakeMask, result.tones.Length)) {
+                    int? lastX = null;
+                    int? lastY = null;
+                    for (int i = start; i < end; i++) {
+                        if (result.tones[i] < 0) {
                             continue;
+                        }
+                        int x = phrase.position - part.position + (int)result.ticks[i];
+                        if (result.ticks[i] < 0) {
+                            if (i + 1 < result.ticks.Length && result.ticks[i + 1] > 0) { } else
+                                continue;
+                        }
+                        if (x >= phrase.position + phrase.duration) {
+                            i = end - 1;
+                        }
+                        int pitchIndex = Math.Clamp((x - (phrase.position - part.position - phrase.leading)) / 5, 0, phrase.pitches.Length - 1);
+                        float basePitch = phrase.pitchesBeforeDeviation[pitchIndex];
+                        int y = (int)(result.tones[i] * 100 - basePitch);
+                        lastX ??= x;
+                        lastY ??= y;
+                        if (y > minPitD) {
+                            commands.Add(new SetCurveCommand(
+                                project, part, Format.Ustx.PITD, x, y, lastX.Value, lastY.Value));
+                        }
+                        lastX = x;
+                        lastY = y;
                     }
-                    if (x >= phrase.position + phrase.duration) {
-                        i = result.tones.Length - 1;
-                    }
-                    int pitchIndex = Math.Clamp((x - (phrase.position - part.position - phrase.leading)) / 5, 0, phrase.pitches.Length - 1);
-                    float basePitch = phrase.pitchesBeforeDeviation[pitchIndex];
-                    int y = (int)(result.tones[i] * 100 - basePitch);
-                    lastX ??= x;
-                    lastY ??= y;
-                    if (y > minPitD) {
-                        commands.Add(new SetCurveCommand(
-                            project, part, Format.Ustx.PITD, x, y, lastX.Value, lastY.Value));
-                    }
-                    lastX = x;
-                    lastY = y;
                 }
                 finished += 1;
                 setProgressCallback(finished, phrases.Length);
             }
 
             DocManager.Inst.PostOnUIThread(() => {
-                docManager.StartUndoGroup(true);
+                docManager.StartUndoGroup("command.batch.note", true);
                 commands.ForEach(docManager.ExecuteCmd);
                 docManager.EndUndoGroup();
             });
@@ -736,7 +730,7 @@ namespace OpenUtau.Core.Editing {
                             pitch);
                 }
             }
-            docManager.StartUndoGroup(true);
+            docManager.StartUndoGroup("command.batch.note", true);
             //Apply pitch points to notes
             foreach (var note in notes) {
                 if (pitchPointsPerNote.TryGetValue(note.position, out var tickRangeAndPitch)) {
@@ -759,13 +753,7 @@ namespace OpenUtau.Core.Editing {
                 if (pitchPointsPerNote.TryGetValue(note.position, out var tickRangeAndPitch)) {
                     var start = tickRangeAndPitch.Item1 - part.position;
                     var end = tickRangeAndPitch.Item2 - part.position;
-                    docManager.ExecuteCmd(new SetCurveCommand(project, part, Format.Ustx.PITD,
-                        start, 0,
-                        start, 0));
-                    docManager.ExecuteCmd(new SetCurveCommand(project, part, Format.Ustx.PITD,
-                        end, 0,
-                        end, 0));
-                    docManager.ExecuteCmd(new SetCurveCommand(project, part, Format.Ustx.PITD,
+                    docManager.ExecuteCmd(new PasteCurveCommand(project, part, Format.Ustx.PITD,
                         start, 0,
                         end, 0));
                 }
@@ -845,18 +833,18 @@ namespace OpenUtau.Core.Editing {
                 finished += 1;
                 setProgressCallback(finished, part.renderPhrases.Count);
             }
-            var commands = curveDict
-                .Select(kv => new MergedSetCurveCommand(
-                    project, part, kv.Key,
-                    kv.Value?.realXs.ToArray() ?? Array.Empty<int>(),
-                    kv.Value?.realYs.ToArray() ?? Array.Empty<int>(),
-                    newXsDict[kv.Key].ToArray(),
-                    newYsDict[kv.Key].ToArray(),
-                    true))
-                .ToList();
 
             DocManager.Inst.PostOnUIThread(() => {
-                docManager.StartUndoGroup(true);
+                var commands = curveDict
+                    .Select(kv => new MergedSetCurveCommand(
+                        project, part, kv.Key,
+                        kv.Value?.realXs.ToArray() ?? Array.Empty<int>(),
+                        kv.Value?.realYs.ToArray() ?? Array.Empty<int>(),
+                        newXsDict[kv.Key].ToArray(),
+                        newYsDict[kv.Key].ToArray(),
+                        true))
+                    .ToList();
+                docManager.StartUndoGroup("command.batch.note", true);
                 commands.ForEach(docManager.ExecuteCmd);
                 docManager.EndUndoGroup();
             });

@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Reactive;
-using System.Reactive.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using DynamicData;
@@ -15,13 +15,16 @@ using OpenUtau.App.Views;
 using OpenUtau.Core;
 using OpenUtau.Core.Ustx;
 using OpenUtau.Core.Util;
+using OpenUtau.ViewModels;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.Primitives;
+using ReactiveUI.SourceGenerators;
 using Serilog;
-using SharpCompress;
+using static ReactiveUI.Primitives.SubscribeExtensions;
 
 namespace OpenUtau.App.ViewModels {
     public class NotesRefreshEvent { }
+    public class RealCurveRefreshEvent { }
     public class NotesSelectionEvent {
         public readonly UNote[] selectedNotes;
         public readonly UNote[] tempSelectedNotes;
@@ -32,60 +35,53 @@ namespace OpenUtau.App.ViewModels {
     }
     public class WaveformRefreshEvent { }
 
-    public class NotesViewModel : ViewModelBase, ICmdSubscriber {
-        [Reactive] public Rect Bounds { get; set; }
+    public partial class NotesViewModel : ViewModelBase, ICmdSubscriber {
+        [Reactive] public partial Rect Bounds { get; set; }
         public int TickCount => Part?.Duration ?? 480 * 4;
         public int TrackCount => ViewConstants.MaxTone;
-        [Reactive] public double TickWidth { get; set; }
+        [Reactive] public partial double TickWidth { get; set; }
         public double TrackHeightMin => ViewConstants.NoteHeightMin;
         public double TrackHeightMax => ViewConstants.NoteHeightMax;
-        [Reactive] public double TrackHeight { get; set; }
-        [Reactive] public int TickOrigin { get; set; }
-        [Reactive] public double TickOffset { get; set; }
-        [Reactive] public double TrackOffset { get; set; }
-        [Reactive] public int SnapDiv { get; set; }
-        [Reactive] public int Key { get; set; }
+        [Reactive] public partial double TrackHeight { get; set; }
+        [Reactive] public partial int TickOrigin { get; set; }
+        [Reactive] public partial double TickOffset { get; set; }
+        [Reactive] public partial double TrackOffset { get; set; }
+        [Reactive] public partial int SnapDiv { get; set; }
+        [Reactive] public partial int Key { get; set; }
         public ObservableCollectionExtended<int> SnapTicks { get; } = new ObservableCollectionExtended<int>();
-        [Reactive] public double PlayPosX { get; set; }
-        [Reactive] public double PlayPosHighlightX { get; set; }
-        [Reactive] public double PlayPosHighlightWidth { get; set; }
-        [Reactive] public bool PlayPosWaitingRendering { get; set; }
-        [Reactive] public bool CursorTool { get; set; }
-        [Reactive] public bool PenTool { get; set; }
-        [Reactive] public bool PenPlusTool { get; set; }
-        [Reactive] public bool EraserTool { get; set; }
-        [Reactive] public bool DrawPitchTool { get; set; }
-        [Reactive] public bool DrawLinePitchTool { get; set; }
-        [Reactive] public bool OverwritePitchTool { get; set; }
-        [Reactive] public bool OverwriteLinePitchTool { get; set; }
-        [Reactive] public bool KnifeTool { get; set; }
-        public ReactiveCommand<string, Unit> SelectToolCommand { get; }
-        [Reactive] public bool ShowTips { get; set; }
-        [Reactive] public bool PlayTone { get; set; }
-        [Reactive] public bool ShowVibrato { get; set; }
-        [Reactive] public bool ShowPitch { get; set; }
-        [Reactive] public bool ShowFinalPitch { get; set; }
-        [Reactive] public bool ShowWaveform { get; set; }
-        [Reactive] public bool ShowPhoneme { get; set; }
-        [Reactive] public bool ShowNoteParams { get; set; }
-        [Reactive] public bool ShowExpressions { get; set; }
-        [Reactive] public bool IsSnapOn { get; set; }
-        [Reactive] public string SnapDivText { get; set; }
-        [Reactive] public string KeyText { get; set; }
-        [Reactive] public Rect ExpBounds { get; set; }
-        [Reactive] public string PrimaryKey { get; set; }
-        [Reactive] public bool PrimaryKeyNotSupported { get; set; }
-        [Reactive] public string SecondaryKey { get; set; }
-        [Reactive] public double ExpTrackHeight { get; set; }
-        [Reactive] public double ExpShadowOpacity { get; set; }
-        [Reactive] public double ExpHeightMin { get; set; }
-        [Reactive] public double ExpHeightMax { get; set; }
-        [Reactive] public UVoicePart? Part { get; set; }
-        [Reactive] public Bitmap? Avatar { get; set; }
-        [Reactive] public Bitmap? Portrait { get; set; }
-        [Reactive] public IBrush? PortraitMask { get; set; }
-        [Reactive] public string WindowTitle { get; set; } = "Piano Roll";
-        [Reactive] public SolidColorBrush TrackAccentColor { get; set; } = ThemeManager.GetTrackColor("Blue").AccentColor;
+        [Reactive] public partial double PlayPosX { get; set; }
+        [Reactive] public partial double PlayPosHighlightX { get; set; }
+        [Reactive] public partial double PlayPosHighlightWidth { get; set; }
+        [Reactive] public partial bool PlayPosWaitingRendering { get; set; }
+        [Reactive] public partial int PlayPosTick { get; set; }
+        [Reactive] public partial bool ShowPlaybackNoteHighlight { get; set; }
+        [Reactive] public partial bool ShowTips { get; set; }
+        [Reactive] public partial bool PlayTone { get; set; }
+        [Reactive] public partial bool ShowVibrato { get; set; }
+        [Reactive] public partial bool ShowPitch { get; set; }
+        [Reactive] public partial bool ShowFinalPitch { get; set; }
+        [Reactive] public partial bool ShowWaveform { get; set; }
+        [Reactive] public partial bool ShowPhoneme { get; set; }
+        [Reactive] public partial bool ShowNoteParams { get; set; }
+        [Reactive] public partial bool ShowExpressions { get; set; }
+        [Reactive] public partial bool IsSnapOn { get; set; }
+        [Reactive] public partial string SnapDivText { get; set; }
+        [Reactive] public partial string KeyText { get; set; }
+        [Reactive] public partial Rect ExpBounds { get; set; }
+        [Reactive] public partial string PrimaryKey { get; set; }
+        [Reactive] public partial bool PrimaryKeyNotSupported { get; set; }
+        [Reactive] public partial bool ShowCurveToolbar { get; set; }
+        [Reactive] public partial string SecondaryKey { get; set; }
+        [Reactive] public partial double ExpTrackHeight { get; set; }
+        [Reactive] public partial double ExpShadowOpacity { get; set; }
+        [Reactive] public partial double ExpHeightMin { get; set; }
+        [Reactive] public partial double ExpHeightMax { get; set; }
+        [Reactive] public partial UVoicePart? Part { get; set; }
+        [Reactive] public partial Bitmap? Avatar { get; set; }
+        [Reactive] public partial Bitmap? Portrait { get; set; }
+        [Reactive] public partial IBrush? PortraitMask { get; set; }
+        [Reactive] public partial string WindowTitle { get; set; } = "Piano Roll";
+        [Reactive] public partial SolidColorBrush TrackAccentColor { get; set; } = ThemeManager.GetTrackColor("Blue").AccentColor;
         public double ViewportTicks => viewportTicks.Value;
         public double ViewportTracks => viewportTracks.Value;
         public double SmallChangeX => smallChangeX.Value;
@@ -93,11 +89,11 @@ namespace OpenUtau.App.ViewModels {
         public double HScrollBarMax => Math.Max(0, TickCount - ViewportTicks);
         public double VScrollBarMax => Math.Max(0, TrackCount - ViewportTracks);
         public UProject Project => DocManager.Inst.Project;
-        [Reactive] public List<MenuItemViewModel> SnapDivs { get; set; }
-        [Reactive] public List<MenuItemViewModel> Keys { get; set; }
+        [Reactive] public partial List<MenuItemViewModel> SnapDivs { get; set; }
+        [Reactive] public partial List<MenuItemViewModel> Keys { get; set; }
 
-        public ReactiveCommand<int, Unit> SetSnapUnitCommand { get; set; }
-        public ReactiveCommand<int, Unit> SetKeyCommand { get; set; }
+        public ReactiveCommand<int, RxVoid> SetSnapUnitCommand { get; set; }
+        public ReactiveCommand<int, RxVoid> SetKeyCommand { get; set; }
 
         // See the comments on TracksViewModel.playPosXToTickOffset
         private double playPosXToTickOffset => Bounds.Width != 0 ? ViewportTicks / Bounds.Width : 0;
@@ -111,6 +107,8 @@ namespace OpenUtau.App.ViewModels {
 
         internal NotesViewModelHitTest HitTest;
         private int _lastNoteLength = 480;
+        private int playPosTick;
+        private UNote[] playbackNotes = Array.Empty<UNote>();
         private string? portraitSource;
         private readonly object portraitLock = new object();
         private int userSnapDiv = -2;
@@ -125,7 +123,7 @@ namespace OpenUtau.App.ViewModels {
 
             Keys = new List<MenuItemViewModel>();
             SetKeyCommand = ReactiveCommand.Create<int>(key => {
-                DocManager.Inst.StartUndoGroup();
+                DocManager.Inst.StartUndoGroup("command.project.key");
                 DocManager.Inst.ExecuteCmd(new KeyCommand(Project, key));
                 DocManager.Inst.EndUndoGroup();
                 UpdateKey();
@@ -160,15 +158,30 @@ namespace OpenUtau.App.ViewModels {
                 });
             this.WhenAnyValue(x => x.ExpBounds, x => x.PrimaryKey)
                 .Subscribe(t => {
-                    if (t.Item2 != null &&
-                        Project.expressions.TryGetValue(t.Item2, out var descriptor) &&
-                        descriptor.type == UExpressionType.Options &&
-                        descriptor.options.Length > 0) {
-                        ExpTrackHeight = t.Item1.Height / descriptor.options.Length;
-                        ExpShadowOpacity = 0;
+                    UExpressionDescriptor? descriptor = null;
+                    if (t.Item2 != null) {
+                        UExpressionDescriptor trackDesc = default!;
+                        bool hasTrackDesc = Part != null && Project.tracks[Part.trackNo]
+                            .TryGetExpDescriptor(Project, t.Item2, out trackDesc);
+                        if (hasTrackDesc) {
+                            descriptor = trackDesc;
+                        } else if (Project.expressions.TryGetValue(t.Item2, out var projDesc)) {
+                            descriptor = projDesc;
+                        }
+                    }
+                    if (descriptor != null) {
+                        if (descriptor.type == UExpressionType.Options) {
+                            int numOptions = Math.Max(descriptor.options.Length, 1);
+                            ExpTrackHeight = t.Item1.Height / numOptions;
+                            ExpShadowOpacity = 0;
+                        } else {
+                            ExpTrackHeight = 0;
+                        }
+                        ShowCurveToolbar = descriptor.type == UExpressionType.Curve;
                     } else {
                         ExpTrackHeight = 0;
                         ExpShadowOpacity = 0.3;
+                        ShowCurveToolbar = false;
                     }
                 });
             this.WhenAnyValue(x => x.Project)
@@ -201,32 +214,6 @@ namespace OpenUtau.App.ViewModels {
                             CommandParameter = index,
                         }));
                 });
-
-            CursorTool = false;
-            if (Preferences.Default.PenPlusDefault) {
-                PenPlusTool = true;
-                PenTool = false;
-            } else {
-                PenTool = true;
-                PenPlusTool = false;
-            }
-            EraserTool = false;
-            DrawPitchTool = false;
-            DrawLinePitchTool = false;
-            OverwritePitchTool = false;
-            OverwriteLinePitchTool = false;
-            KnifeTool = false;
-            SelectToolCommand = ReactiveCommand.Create<string>(index => {
-                CursorTool = index == "1";
-                PenTool = index == "2";
-                PenPlusTool = index == "2+";
-                EraserTool = index == "3";
-                DrawPitchTool = index == "4";
-                OverwritePitchTool = index == "4+";
-                DrawLinePitchTool = index == "4++";
-                OverwriteLinePitchTool = index == "4+++";
-                KnifeTool = index == "5";
-            });
 
             ShowTips = Preferences.Default.ShowTips;
             IsSnapOn = true;
@@ -285,6 +272,7 @@ namespace OpenUtau.App.ViewModels {
                 Preferences.Default.ShowNoteParams = showNoteParams;
                 Preferences.Save();
             });
+            ShowPlaybackNoteHighlight = Preferences.Default.ShowPlaybackNoteHighlight;
 
             TickWidth = ViewConstants.PianoRollTickWidthDefault;
             TrackHeight = ViewConstants.NoteHeightDefault;
@@ -315,7 +303,19 @@ namespace OpenUtau.App.ViewModels {
                         case "TrackColor":
                             LoadTrackColor(Part, Project);
                             break;
+                        case "PlaybackNoteHighlight":
+                            ShowPlaybackNoteHighlight = Preferences.Default.ShowPlaybackNoteHighlight;
+                            break;
                     }
+                });
+            MessageBus.Current.Listen<CurveSelectionEvent>()
+                .Subscribe(e => {
+                    Selection.SelectNone();
+                    MessageBus.Current.SendMessage(new NotesSelectionEvent(Selection));
+                });
+            MessageBus.Current.Listen<CurveCopyEvent>()
+                .Subscribe(e => {
+                    DocManager.Inst.NotesClipboard?.Clear();
                 });
         }
 
@@ -335,9 +335,9 @@ namespace OpenUtau.App.ViewModels {
             SnapDivText = $"(1/{div})";
         }
 
-        private void UpdateKey(){
+        private void UpdateKey() {
             Key = userKey;
-            KeyText = "1="+MusicMath.KeysInOctave[userKey].Item1;
+            KeyText = "1=" + MusicMath.KeysInOctave[userKey].Item1;
         }
 
         public void OnXZoomed(Point position, double delta) {
@@ -453,6 +453,7 @@ namespace OpenUtau.App.ViewModels {
             UnloadPart();
             Part = part as UVoicePart;
             OnPartModified();
+            RebuildPlaybackNoteIndex();
             LoadPortrait(part, project);
             LoadWindowTitle(part, project);
             LoadTrackColor(part, project);
@@ -474,7 +475,7 @@ namespace OpenUtau.App.ViewModels {
                 targetHeight = PortraitHeight;
             }
             int targetWidth = (int)Math.Round(targetHeight * Portrait.Size.Width / Portrait.Size.Height);
-            if(targetWidth == 0){
+            if (targetWidth == 0) {
                 targetWidth = 1;
             }
             return Portrait.CreateScaledBitmap(new PixelSize(targetWidth, targetHeight));
@@ -527,7 +528,7 @@ namespace OpenUtau.App.ViewModels {
                                 Portrait = null;
                                 portraitSource = null;
                             } else {
-                                using (var stream = new MemoryStream(data)) { 
+                                using (var stream = new MemoryStream(data)) {
                                     Portrait = ResizePortrait(new Bitmap(stream), singer.PortraitHeight);
                                     portraitSource = singer.Portrait;
                                 }
@@ -566,6 +567,7 @@ namespace OpenUtau.App.ViewModels {
         private void UnloadPart() {
             DeselectNotes();
             Part = null;
+            playbackNotes = Array.Empty<UNote>();
             LoadPortrait(null, null);
             LoadWindowTitle(null, null);
         }
@@ -622,18 +624,18 @@ namespace OpenUtau.App.ViewModels {
             if (Selection.Move(delta)) {
                 MessageBus.Current.SendMessage(new NotesSelectionEvent(Selection));
                 ScrollIntoView(Selection.Head!);
-            };
+            }
         }
         public void ExtendSelection(int delta) {
             if (Selection.Resize(delta)) {
                 MessageBus.Current.SendMessage(new NotesSelectionEvent(Selection));
                 ScrollIntoView(Selection.Head!);
-            };
+            }
         }
         public void ExtendSelection(UNote note) {
             if (Selection.SelectTo(note)) {
                 MessageBus.Current.SendMessage(new NotesSelectionEvent(Selection));
-            };
+            }
         }
 
         public void MoveCursor(int delta) {
@@ -741,7 +743,7 @@ namespace OpenUtau.App.ViewModels {
             int tone = fromNote?.tone ?? DEFAULT_TONE;
             int tick = fromNote?.RightBound ?? (int)TickOffset;
             int dur = fromNote?.duration ?? snapUnit;
-            DocManager.Inst.StartUndoGroup();
+            DocManager.Inst.StartUndoGroup("command.note.add");
             UNote note = DocManager.Inst.Project.CreateNote(tone, tick, dur);
             DocManager.Inst.ExecuteCmd(new AddNoteCommand(Part, note));
             SelectNote(note);
@@ -756,7 +758,7 @@ namespace OpenUtau.App.ViewModels {
             if (selectedNotes.Any(note => note.tone + deltaNoteNum <= 0 || note.tone + deltaNoteNum >= ViewConstants.MaxTone)) {
                 return;
             }
-            DocManager.Inst.StartUndoGroup();
+            DocManager.Inst.StartUndoGroup("command.note.move");
             DocManager.Inst.ExecuteCmd(new MoveNoteCommand(Part, selectedNotes, 0, deltaNoteNum));
             DocManager.Inst.EndUndoGroup();
         }
@@ -769,7 +771,7 @@ namespace OpenUtau.App.ViewModels {
             //var delta = Math.Clamp(deltaTicks, -1 * selectedNotes.First().position, Part.End - selectedNotes.Last().position);
             var delta = Math.Max(deltaTicks, -1 * selectedNotes.First().position);
 
-            DocManager.Inst.StartUndoGroup();
+            DocManager.Inst.StartUndoGroup("command.note.move");
             DocManager.Inst.ExecuteCmd(new MoveNoteCommand(Part, selectedNotes, delta, 0));
             DocManager.Inst.EndUndoGroup();
         }
@@ -793,7 +795,7 @@ namespace OpenUtau.App.ViewModels {
                     return;
                 }
             }
-            DocManager.Inst.StartUndoGroup();
+            DocManager.Inst.StartUndoGroup("command.note.edit");
             DocManager.Inst.ExecuteCmd(new ResizeNoteCommand(Part, selectedNotes, deltaTicks));
             DocManager.Inst.EndUndoGroup();
         }
@@ -806,10 +808,10 @@ namespace OpenUtau.App.ViewModels {
             notes.Sort((a, b) => a.position.CompareTo(b.position));
             //Ignore slur lyrics
             var mergedLyrics = String.Join("", notes.Select(x => x.lyric).Where(l => !l.StartsWith("+")));
-            if(mergedLyrics == ""){ //If all notes are slur, the merged note is single slur note
+            if (mergedLyrics == "") { //If all notes are slur, the merged note is single slur note
                 mergedLyrics = notes[0].lyric;
             }
-            DocManager.Inst.StartUndoGroup();
+            DocManager.Inst.StartUndoGroup("command.note.edit");
             DocManager.Inst.ExecuteCmd(new ChangeNoteLyricCommand(Part, notes[0], mergedLyrics));
             DocManager.Inst.ExecuteCmd(new ResizeNoteCommand(Part, notes[0], notes.Last().End - notes[0].End));
             notes.RemoveAt(0);
@@ -821,7 +823,7 @@ namespace OpenUtau.App.ViewModels {
             if (Part == null || Selection.IsEmpty) {
                 return;
             }
-            DocManager.Inst.StartUndoGroup();
+            DocManager.Inst.StartUndoGroup("command.note.delete");
             DocManager.Inst.ExecuteCmd(new RemoveNoteCommand(Part, Selection.ToList()));
             DocManager.Inst.EndUndoGroup();
         }
@@ -837,7 +839,7 @@ namespace OpenUtau.App.ViewModels {
             if (Part != null && !Selection.IsEmpty) {
                 var selectedNotes = Selection.ToList();
                 DocManager.Inst.NotesClipboard = selectedNotes.Select(note => note.Clone()).ToList();
-                DocManager.Inst.StartUndoGroup();
+                DocManager.Inst.StartUndoGroup("command.note.delete");
                 DocManager.Inst.ExecuteCmd(new RemoveNoteCommand(Part, selectedNotes));
                 DocManager.Inst.EndUndoGroup();
             }
@@ -855,11 +857,11 @@ namespace OpenUtau.App.ViewModels {
                 int offset = left - minPosition - Part.position;
                 var notes = DocManager.Inst.NotesClipboard.Select(note => note.Clone()).ToList();
                 notes.ForEach(note => note.position += offset);
-                DocManager.Inst.StartUndoGroup();
+                DocManager.Inst.StartUndoGroup("command.note.paste");
                 DocManager.Inst.ExecuteCmd(new AddNoteCommand(Part, notes));
                 int minDurTick = Part.GetMinDurTick(Project);
                 if (Part.Duration < minDurTick) {
-                    DocManager.Inst.ExecuteCmd(new ResizePartCommand(Project, Part, minDurTick - Part.Duration, false));
+                    DocManager.Inst.ExecuteCmd(new ResizeVoicePartCommand(Project, Part, minDurTick - Part.Duration, false));
                 }
                 DocManager.Inst.EndUndoGroup();
                 Selection.Select(notes);
@@ -896,11 +898,11 @@ namespace OpenUtau.App.ViewModels {
                 int offset = left - minPosition - Part.position;
                 var notes = DocManager.Inst.NotesClipboard.Select(note => toPlainNote(note)).ToList();
                 notes.ForEach(note => note.position += offset);
-                DocManager.Inst.StartUndoGroup();
+                DocManager.Inst.StartUndoGroup("command.note.paste");
                 DocManager.Inst.ExecuteCmd(new AddNoteCommand(Part, notes));
                 int minDurTick = Part.GetMinDurTick(Project);
                 if (Part.Duration < minDurTick) {
-                    DocManager.Inst.ExecuteCmd(new ResizePartCommand(Project, Part, minDurTick - Part.Duration, false));
+                    DocManager.Inst.ExecuteCmd(new ResizeVoicePartCommand(Project, Part, minDurTick - Part.Duration, false));
                 }
                 DocManager.Inst.EndUndoGroup();
                 Selection.Select(notes);
@@ -913,10 +915,10 @@ namespace OpenUtau.App.ViewModels {
             }
         }
 
-        public async void PasteSelectedParams(PianoRollWindow window) {
+        public async void PasteSelectedParams(Window window) {
             if (Part != null && DocManager.Inst.NotesClipboard != null && DocManager.Inst.NotesClipboard.Count > 0) {
                 var selectedNotes = Selection.ToList();
-                if(selectedNotes.Count == 0) {
+                if (selectedNotes.Count == 0) {
                     return;
                 }
 
@@ -926,7 +928,7 @@ namespace OpenUtau.App.ViewModels {
                 await dialog.ShowDialog(window);
 
                 if (dialog.Apply) {
-                    DocManager.Inst.StartUndoGroup();
+                    DocManager.Inst.StartUndoGroup("command.parameter.paste");
 
                     int c = 0;
                     var track = Project.tracks[Part.trackNo];
@@ -969,7 +971,7 @@ namespace OpenUtau.App.ViewModels {
                 return;
             }
             var vibrato = note.vibrato;
-            DocManager.Inst.StartUndoGroup();
+            DocManager.Inst.StartUndoGroup("command.vibrato.edit");
             DocManager.Inst.ExecuteCmd(new VibratoLengthCommand(Part, note, vibrato.length == 0 ? NotePresets.Default.DefaultVibrato.VibratoLength : 0));
             DocManager.Inst.EndUndoGroup();
         }
@@ -977,10 +979,26 @@ namespace OpenUtau.App.ViewModels {
         public void ClearPhraseCache() {
             if (Part != null && !Selection.IsEmpty) {
                 DocManager.Inst.ExecuteCmd(new ProgressBarNotification(0, ThemeManager.GetString("progress.clearingcache")));
+                
                 var selectedNotes = Selection.ToList();
-                var phrases = Part.renderPhrases.Where(phrase => selectedNotes.Any(note => phrase.notes.Any(rnote => rnote.position == Part.position + note.position - phrase.position && rnote.duration == note.duration)));
-                phrases.ForEach(phrase => phrase.DeleteCacheFiles());
-                DocManager.Inst.ExecuteCmd(new ProgressBarNotification(0, ThemeManager.GetString("progress.cachecleared")));
+                var phrases = Part.renderPhrases
+                    .Where(phrase => selectedNotes.Any(note => 
+                        phrase.notes.Any(rnote => rnote.position == Part.position + note.position - phrase.position 
+                                            && rnote.duration == note.duration)))
+                    .ToList();
+                foreach (var phrase in phrases) {
+                    PlaybackManager.Inst.LiveWaveformCache.TryRemove(phrase.hash.ToString(), out _);
+                }
+                Part.Mix = null;
+                DocManager.Inst.ExecuteCmd(new WaveformReadyNotification());
+                Task.Run(() => {
+                    foreach (var phrase in phrases) {
+                        phrase.DeleteCacheFiles();
+                    }
+                    Task.Factory.StartNew(() => {
+                        DocManager.Inst.ExecuteCmd(new ProgressBarNotification(0, ThemeManager.GetString("progress.cachecleared")));
+                    }, CancellationToken.None, TaskCreationOptions.None, DocManager.Inst.MainScheduler);
+                });
             }
         }
 
@@ -990,10 +1008,45 @@ namespace OpenUtau.App.ViewModels {
                 return;
             }
             tick -= Part?.position ?? 0;
+            playPosTick = tick;
             PlayPosX = TickToneToPoint(tick, 0).X;
-            TickToLineTick(tick, out int left, out int right);
-            PlayPosHighlightX = TickToneToPoint(left, 0).X;
-            PlayPosHighlightWidth = (right - left) * TickWidth;
+            PlayPosTick = tick;
+            UpdateHighlight();
+        }
+
+        private void RebuildPlaybackNoteIndex() {
+            playbackNotes = Part?.notes.ToArray() ?? Array.Empty<UNote>();
+        }
+
+        public UNote? FindVoiceNoteAtTick(int tick) {
+            int low = 0;
+            int high = playbackNotes.Length - 1;
+            while (low <= high) {
+                int mid = low + (high - low) / 2;
+                var note = playbackNotes[mid];
+                if (tick < note.LeftBound) {
+                    high = mid - 1;
+                } else if (tick >= note.RightBound) {
+                    low = mid + 1;
+                } else {
+                    return note;
+                }
+            }
+            return null;
+        }
+
+        private void UpdateHighlight() {
+            if (DocManager.Inst.rangeEndTick > DocManager.Inst.rangeStartTick) {
+                int partPos = Part?.position ?? 0;
+                int left = DocManager.Inst.rangeStartTick - partPos;
+                int right = DocManager.Inst.rangeEndTick - partPos;
+                PlayPosHighlightX = TickToneToPoint(left, 0).X;
+                PlayPosHighlightWidth = (right - left) * TickWidth;
+            } else {
+                TickToLineTick((int)(PlayPosX / TickWidth + TickOffset), out int left, out int right);
+                PlayPosHighlightX = TickToneToPoint(left, 0).X;
+                PlayPosHighlightWidth = (right - left) * TickWidth;
+            }
         }
 
         private void FocusNote(UNote note) {
@@ -1070,6 +1123,8 @@ namespace OpenUtau.App.ViewModels {
                     if (!setPlayPosTick.pause || Preferences.Default.LockStartTime == 1) {
                         MaybeAutoScroll(PlayPosX);
                     }
+                } else if (cmd is SetRangeSelectionNotification) {
+                    UpdateHighlight();
                 } else if (cmd is FocusNoteNotification focusNote) {
                     if (focusNote.part == Part) {
                         FocusNote(focusNote.note);
@@ -1082,12 +1137,18 @@ namespace OpenUtau.App.ViewModels {
                         LoadPortrait(Part, Project);
                     }
                     OnPartModified();
+                    RebuildPlaybackNoteIndex();
                     MessageBus.Current.SendMessage(new NotesRefreshEvent());
                 } else if (cmd is PhonemizedNotification) {
                     OnPartModified();
+                    RebuildPlaybackNoteIndex();
                     MessageBus.Current.SendMessage(new NotesRefreshEvent());
                 } else if (notif is PartRenderedNotification && notif.part == Part) {
                     MessageBus.Current.SendMessage(new WaveformRefreshEvent());
+                } else if (notif is RealCurvesUpdatedNotification && notif.part == Part) {
+                    MessageBus.Current.SendMessage(new RealCurveRefreshEvent());
+                } else if (notif is RealCurveCoverageNotification && notif.part == Part) {
+                    MessageBus.Current.SendMessage(new RealCurveRefreshEvent());
                 }
             } else if (cmd is PartCommand partCommand) {
                 if (cmd is ReplacePartCommand replacePart) {
@@ -1108,7 +1169,7 @@ namespace OpenUtau.App.ViewModels {
                     if (isUndo && addPart.part == Part) {
                         UnloadPart();
                     }
-                } else if (cmd is ResizePartCommand) {
+                } else if (cmd is ResizeVoicePartCommand) {
                     OnPartModified();
                 } else if (cmd is MovePartCommand) {
                     OnPartModified();
@@ -1118,6 +1179,7 @@ namespace OpenUtau.App.ViewModels {
             } else if (cmd is NoteCommand noteCommand) {
                 CleanupSelectedNotes();
                 if (noteCommand.Part == Part) {
+                    RebuildPlaybackNoteIndex();
                     MessageBus.Current.SendMessage(new NotesRefreshEvent());
 
                     if (noteCommand is RemoveNoteCommand && isUndo) {

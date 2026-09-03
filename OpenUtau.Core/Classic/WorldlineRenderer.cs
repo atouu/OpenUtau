@@ -63,7 +63,7 @@ namespace OpenUtau.Classic {
             };
         }
 
-        public Task<RenderResult> Render(RenderPhrase phrase, Progress progress, int trackNo, CancellationTokenSource cancellation, bool isPreRender) {
+        public Task<RenderResult> Render(RenderPhrase phrase, Progress progress, int trackNo, CancellationTokenSource cancellation, bool isPreRender, RenderPhraseEvents? renderEvents = null) {
             var resamplerItems = new List<ResamplerItem>();
             foreach (var phone in phrase.phones) {
                 resamplerItems.Add(new ResamplerItem(phrase, phone));
@@ -136,27 +136,26 @@ namespace OpenUtau.Classic {
                             NamedOnnxValue.CreateFromTensor("sp_env", spEnvTensor),
                             NamedOnnxValue.CreateFromTensor("ap", apTensor)
                         };
-                        var session = Onnx.getInferenceSession(OpenUtau.Core.Classic.Data.Resources.mel, true);
+                        var session = Onnx.getInferenceSession(OpenUtau.Core.Classic.Data.Resources.mel, OnnxRunnerChoice.CPU);
                         using var results = session.Run(inputs);
                         var melOutput = results.First(r => r.Name == "mel").AsTensor<float>();
-                        const string vocoderDep = "pc_nsf_hifigan_44.1k_hop512_128bin_2025.02";
+                        const string vocoderPkg = "pc-nsf-hifigan";
+                        string vocoderPath = PackageManager.Inst.GetInstalledPath(vocoderPkg) ?? "";
                         if (vocoderBytes == null) {
-                            var configPath = Path.Combine(PathManager.Inst.DependencyPath,
-                                vocoderDep, "vocoder.yaml");
+                            var configPath = Path.Combine(vocoderPath, "vocoder.yaml");
                             if (!File.Exists(configPath)) {
                                 throw new MessageCustomizableException(
-                                    $"Error loading vocoder \"{vocoderDep}\"",
-                                    $"<translate:errors.diffsinger.downloadvocoder>",
-                                    new Exception($"Error loading vocoder \"{vocoderDep}\""),
+                                    $"Error loading package \"{vocoderPkg}\"",
+                                    $"<translate:packages.errors.missing>",
+                                    new Exception($"Error loading package \"{vocoderPkg}\""),
                                 true,
-                                    new string[] { vocoderDep, "https://github.com/xunmengshe/OpenUtau/wiki/Vocoders" });
+                                    new string[] { vocoderPkg });
                             }
                             var config = Yaml.DefaultDeserializer.Deserialize<Core.DiffSinger.DsVocoderConfig>(
                                 File.ReadAllText(configPath, System.Text.Encoding.UTF8));
-                            vocoderBytes = File.ReadAllBytes(Path.Combine(
-                                PathManager.Inst.DependencyPath, vocoderDep, config.model));
+                            vocoderBytes = File.ReadAllBytes(Path.Combine(vocoderPath, config.model));
                         }
-                        var vocoderSession = Onnx.getInferenceSession(vocoderBytes!, false);
+                        var vocoderSession = Onnx.getInferenceSession(vocoderBytes!, OnnxRunnerChoice.Default);
                         var vocoderInputs = new List<NamedOnnxValue> {
                             NamedOnnxValue.CreateFromTensor("mel", melOutput),
                             NamedOnnxValue.CreateFromTensor("f0", f0Tensor),
@@ -177,13 +176,31 @@ namespace OpenUtau.Classic {
                         }
                     }
                     AddDirects(phrase, resamplerItems, result);
-                    var source = new WaveSource(0, 0, 0, 1);
-                    source.SetSamples(result.samples);
-                    WaveFileWriter.CreateWaveFile16(wavPath, new ExportAdapter(source).ToMono(1, 0));
+                    if (result.samples != null) {
+                        var samplesCopy = (float[])result.samples.Clone();
+                        Task.Run(() => {
+                            try {
+                                var source = new WaveSource(0, 0, 0, 1);
+                                source.SetSamples(samplesCopy);
+                                WaveFileWriter.CreateWaveFile16(wavPath, new ExportAdapter(source).ToMono(1, 0));
+                            } catch (Exception e) {
+                                Serilog.Log.Error(e, $"Failed to write cache file: {wavPath}");
+                            }
+                        });
+                    }
                 }
                 progress.Complete(phrase.phones.Length, progressInfo);
                 if (result.samples != null) {
                     Renderers.ApplyDynamics(phrase, result);
+                    PlaybackManager.Inst.LiveWaveformCache[phrase.hash.ToString()] = (
+                        trackNo, 
+                        phrase.positionMs - phrase.leadingMs, 
+                        result.samples, 
+                        DateTime.Now
+                    );
+                    Task.Factory.StartNew(() => {
+                        DocManager.Inst.ExecuteCmd(new WaveformReadyNotification());
+                    }, CancellationToken.None, TaskCreationOptions.None, DocManager.Inst.MainScheduler);
                 }
                 return result;
             });
@@ -243,3 +260,4 @@ namespace OpenUtau.Classic {
         public override string ToString() => version == 1 ? Renderers.WORLDLINE_R : Renderers.WORLDLINE_R2;
     }
 }
+
