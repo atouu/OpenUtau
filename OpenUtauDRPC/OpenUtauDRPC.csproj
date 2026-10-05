@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DiscordRichPresence" Version="1.6.1.70" />
+    <PackageReference Include="DiscordRPC-NativeAOT" Version="1.0.2" />
     <PackageReference Include="ReactiveUI.SourceGenerators" Version="3.1.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -25,7 +25,7 @@
 
   <Target Name="CopyOutput" AfterTargets="Publish">
     <Move
-      SourceFiles="$(PublishDir)\OpenUtauDRPC.dll;$(PublishDir)\DiscordRPC.dll"
+      SourceFiles="$(PublishDir)\OpenUtauDRPC.dll;$(PublishDir)\DiscordRPC-NativeAOT.dll"
       DestinationFolder="$(OutputPath)/OpenUtauDRPC" />
   </Target>
 
