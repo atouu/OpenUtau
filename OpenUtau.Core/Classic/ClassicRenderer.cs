@@ -18,6 +18,8 @@ namespace OpenUtau.Classic {
             Ustx.DYN,
             Ustx.PITD,
             Ustx.CLR,
+            Ustx.CLRY,
+            Ustx.XSY,
             Ustx.ENG,
             Ustx.VEL,
             Ustx.VOL,
@@ -27,7 +29,12 @@ namespace OpenUtau.Classic {
             Ustx.MODP,
             Ustx.ALT,
             Ustx.DIR,
-            Ustx.SHFT
+            Ustx.SHFT,
+            Ustx.GENC,
+            Ustx.TENC,
+            Ustx.BREC,
+            Ustx.VOIC,
+            Ustx.GRWC,
         };
 
         public USingerType SingerType => USingerType.Classic;
@@ -65,7 +72,7 @@ namespace OpenUtau.Classic {
                     MaxDegreeOfParallelism = Preferences.Default.NumRenderThreads
                 }, body: item => {
                     if (!cancellation.IsCancellationRequested && !File.Exists(item.outputFile)) {
-                        if (!(item.resampler is WorldlineResampler)) {
+                        if (!(item.resampler is WorldlineResampler or HifisamplerResampler)) {
                             VoicebankFiles.Inst.CopySourceTemp(item.inputFile, item.inputTemp);
                         }
                         if(!item.phone.direct){
@@ -77,7 +84,7 @@ namespace OpenUtau.Classic {
                                 throw new InvalidDataException($"{item.resampler} failed to resample \"{item.phone.phoneme}\" at {bar}:{beat}.{string.Format("{0:000}", tick)}");
                             }
                         }
-                        if (!(item.resampler is WorldlineResampler)) {
+                        if (!(item.resampler is WorldlineResampler or HifisamplerResampler)) {
                             VoicebankFiles.Inst.CopyBackMetaFiles(item.inputFile, item.inputTemp);
                         }
                     }
@@ -88,10 +95,6 @@ namespace OpenUtau.Classic {
                 result.samples = wavtool.Concatenate(resamplerItems, string.Empty, cancellation);
                 if (result.samples != null) {
                     Renderers.ApplyDynamics(phrase, result);
-                    PlaybackManager.Inst.LiveWaveformCache[phrase.hash.ToString()] = (trackNo, phrase.positionMs - phrase.leadingMs, result.samples, DateTime.Now);
-                    Task.Factory.StartNew(() => {
-                        DocManager.Inst.ExecuteCmd(new WaveformReadyNotification());
-                    }, CancellationToken.None, TaskCreationOptions.None, DocManager.Inst.MainScheduler);
                 }
                 return result;
             });
@@ -131,10 +134,6 @@ namespace OpenUtau.Classic {
                 progress.Complete(phrase.phones.Length, progressInfo);
                 if (result.samples != null) {
                     Renderers.ApplyDynamics(phrase, result);
-                    PlaybackManager.Inst.LiveWaveformCache[phrase.hash.ToString()] = (trackNo, phrase.positionMs - phrase.leadingMs, result.samples, DateTime.Now);
-                    Task.Factory.StartNew(() => {
-                        DocManager.Inst.ExecuteCmd(new WaveformReadyNotification());
-                    }, CancellationToken.None, TaskCreationOptions.None, DocManager.Inst.MainScheduler);
                 }
                 return result;
             });
