@@ -1,6 +1,6 @@
 using System.Reflection;
 using System.Text;
-using Newtonsoft.Json;
+using OpenUtau.Core;
 using Serilog;
 
 namespace OpenUtauDRPC {
@@ -17,7 +17,7 @@ namespace OpenUtauDRPC {
         public static void Save() {
             try {
                 File.WriteAllText(preferencePath,
-                    JsonConvert.SerializeObject(Default, Formatting.Indented),
+                    Json.Serialize(Default, Json.WriteIndentedOptions),
                     Encoding.UTF8);
             } catch (Exception e) {
                 Log.Error(e, "Failed to save prefs.");
@@ -32,7 +32,7 @@ namespace OpenUtauDRPC {
         private static void Load() {
             try {
                 if (File.Exists(preferencePath)) {
-                    Default = JsonConvert.DeserializeObject<SerializablePreferences>(
+                    Default = Json.Deserialize<SerializablePreferences>(
                         File.ReadAllText(preferencePath, Encoding.UTF8));
                     if(Default == null) {
                         Reset();
