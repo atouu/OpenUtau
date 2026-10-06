@@ -7,6 +7,7 @@
     xmlns:converters="clr-namespace:Avalonia.Data.Converters;assembly=Avalonia.Base"
     mc:Ignorable="d" d:DesignWidth="700" d:DesignHeight="460"
     x:Class="OpenUtau.App.Views.SingerIndexWindow"
+    x:DataType="vm:SingerIndexViewModel"
     Icon="/Assets/open-utau.ico"
     Title="Singer Index"
     WindowStartupLocation="CenterScreen"
@@ -82,7 +83,7 @@
         </ScrollViewer>
       </Grid>
 
-      <Grid RowDefinitions="auto,*" IsEnabled="{Binding !SelectedSinger.IsInstalling}">
+      <Grid RowDefinitions="auto,*">
         <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10" Margin="0,0,0,10">
           <Button VerticalAlignment="Center" Classes="clear" Content="Back" Command="{Binding OnBack}" Margin="0" Padding="3" Height="NaN">
             <Path Height="18" Width="18" Fill="{Binding $parent.Foreground}"
@@ -140,13 +141,13 @@
                 </ItemsPanelTemplate>
               </ItemsControl.ItemsPanel>
               <ItemsControl.ItemTemplate>
-                <DataTemplate>
+                <DataTemplate x:DataType="vm:SingerIndexViewModel+SingerVariant">
                   <Border CornerRadius="5" BorderThickness="1" BorderBrush="{DynamicResource BorderColor}" Padding="15">
                     <StackPanel Spacing="5">
                       <Grid RowDefinitions="auto,auto" ColumnDefinitions="*,auto">
                         <TextBlock Grid.Row="0" Text="{Binding Names[en]}" FontSize="14" FontWeight="Bold"/>
                         <TextBlock Grid.Row="1" Text="{Binding AltNames}" FontSize="12" Padding="0"/>
-                        <Button Grid.Column="1" Content="Install" Command="{Binding $parent[ItemsControl].DataContext.OnDownloadVariant}" CommandParameter="{Binding}"
+                        <Button Grid.Column="1" Content="Install" Command="{Binding $parent[ItemsControl].((vm:SingerIndexViewModel)DataContext).OnDownloadVariant}" CommandParameter="{Binding}"
                                 IsVisible="{Binding FileUrl, Converter={x:Static converters:StringConverters.IsNotNullOrEmpty}}" IsEnabled="{Binding !$parent[ItemsControl].DataContext.IsDownloading}"/>
                       </Grid>
                       <ItemsControl ItemsSource="{Binding Tags}" >

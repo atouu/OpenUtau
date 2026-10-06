@@ -1,7 +1,7 @@
 using System;
-using Avalonia.ReactiveUI;
 using OpenUtau.App.ViewModels;
 using ReactiveUI;
+using ReactiveUI.Avalonia;
 
 namespace OpenUtau.App.Views {
     public partial class SingerIndexWindow : ReactiveWindow<SingerIndexViewModel> {

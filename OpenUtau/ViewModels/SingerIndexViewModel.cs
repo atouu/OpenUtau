@@ -4,17 +4,16 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
-using OpenUtau.App.Views;
 using OpenUtau.Core;
+using OpenUtau.App.Views;
 using ReactiveUI;
-using ReactiveUI.Fody.Helpers;
+using ReactiveUI.Primitives;
+using ReactiveUI.SourceGenerators;
+using System.Text.Json;
 
 namespace OpenUtau.App.ViewModels {
     public partial class SingerIndexViewModel : ViewModelBase {
@@ -67,17 +66,17 @@ namespace OpenUtau.App.ViewModels {
         private CancellationTokenSource? cancellation;
         private IEnumerable<SingerEntry>? singers;
 
-        [Reactive] public IEnumerable<SingerEntry>? SingersFiltered { get; set; }
-        [Reactive] public SingerEntry? SelectedSinger { get; set; }
-        [Reactive] public string Search { get; set; }
-        [Reactive] public int Page { get; set; }
-        [Reactive] public int Sorting { get; set; }
+        [Reactive] public partial IEnumerable<SingerEntry>? SingersFiltered { get; set; }
+        [Reactive] public partial SingerEntry? SelectedSinger { get; set; }
+        [Reactive] public partial string Search { get; set; }
+        [Reactive] public partial int Page { get; set; }
+        [Reactive] public partial int Sorting { get; set; }
 
-        [Reactive] public string? DownloadName { get; set; }
-        [Reactive] public string? DownloadCurrentSize { get; set; }
-        [Reactive] public string? DownloadTotalSize { get; set; }
-        [Reactive] public double DownloadProgress { get; set; }
-        [Reactive] public bool IsDownloading { get; set; }
+        [Reactive] public partial string? DownloadName { get; set; }
+        [Reactive] public partial string? DownloadCurrentSize { get; set; }
+        [Reactive] public partial string? DownloadTotalSize { get; set; }
+        [Reactive] public partial double DownloadProgress { get; set; }
+        [Reactive] public partial bool IsDownloading { get; set; }
 
         public Interaction<SingerVariant,bool> DownloadVariant { get; private set; }
 
@@ -119,7 +118,7 @@ namespace OpenUtau.App.ViewModels {
         }
 
         public async Task OnDownloadVariant(object variant) {
-            bool valid = await DownloadVariant.Handle((SingerVariant) variant);
+            bool valid = await DownloadVariant.Handle((SingerVariant) variant).ToTask();
             if (!valid) {
                 return;
             }
@@ -170,10 +169,8 @@ namespace OpenUtau.App.ViewModels {
 
             var responses = requests.Select(task => task.Result);
 
-            var settings = new JsonSerializerSettings() {
-                ContractResolver = new DefaultContractResolver() {
-                    NamingStrategy = new SnakeCaseNamingStrategy()
-                }
+            var settings = new JsonSerializerOptions {
+                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
             };
 
             foreach (var response in responses) {
@@ -181,7 +178,7 @@ namespace OpenUtau.App.ViewModels {
                 if (!response.IsSuccessStatusCode) {
                     continue;
                 }
-                var vbs = JsonConvert.DeserializeObject<List<SingerEntry>>(body, settings);
+                var vbs = Json.Deserialize<List<SingerEntry>>(body, settings);
                 if (vbs != null) {
                     entries.AddRange(vbs);
                 }
