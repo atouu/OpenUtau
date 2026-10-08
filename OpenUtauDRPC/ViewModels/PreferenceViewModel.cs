@@ -11,9 +11,22 @@ namespace OpenUtauDRPC.ViewModels {
 
         [Reactive] private string _selectedSinger;
         [Reactive] private string _selectedSingerIconUrl;
+        [Reactive] private bool _enableLitterbox;
 
         public PreferencesViewModel() {
-            ApplicationId = Preferences.Default.ApplicationId;
+            _applicationId = Preferences.Default.ApplicationId;
+            _enableLitterbox = Preferences.Default.EnableLitterbox;
+
+            this.WhenAnyValue(vm => vm.EnableLitterbox)
+                .Subscribe(enableLitterbox => {
+                    Preferences.Default.EnableLitterbox = enableLitterbox;
+                    Preferences.Save();
+                });
+            this.WhenAnyValue(vm => vm.ApplicationId)
+                .Subscribe(applicationId => {
+                    Preferences.Default.ApplicationId = applicationId;
+                    Preferences.Save();
+                });
         }
 
         public void Add() {

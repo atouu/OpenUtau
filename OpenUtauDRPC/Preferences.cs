@@ -50,6 +50,7 @@ namespace OpenUtauDRPC {
         [Serializable]
         public class SerializablePreferences {
             public string ApplicationId = "1462124130966048822";
+            public bool EnableLitterbox = false;
             public Dictionary<string, string> SingerIconUrls = new() {
                 {"Pumpking the Testloid", "https://static.vocadb.net/img/Artist/additionalOrig/1758.jpg"}
             };

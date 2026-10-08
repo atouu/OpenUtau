@@ -5,10 +5,15 @@
         mc:Ignorable="d" MinWidth="400" Width="400" Height="400"
         x:Class="OpenUtauDRPC.Views.PreferencesDialog"
         Title="Discord Preferences">
-    <Grid RowDefinitions="auto,auto,auto,*" Margin="5">
+    <Grid RowDefinitions="auto,auto,auto,auto,*" Margin="5">
         <TextBlock Grid.Row="0" Margin="0,0,0,5" Text="Application ID (Needs Restart)"/>
         <TextBox Grid.Row="1" Margin="0,0,0,5" Text="{Binding ApplicationId}"/>
-        <Panel Grid.Row="2" Margin="0,0,0,5">
+        <Grid Grid.Row="2" Margin="0,5,0,0">
+            <TextBlock Text="Enable Litterbox (Catbox)" HorizontalAlignment="Left"
+                       VerticalAlignment="Center" />
+            <ToggleSwitch IsChecked="{Binding EnableLitterbox}" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+        </Grid>
+        <Panel Grid.Row="3" Margin="0,5,0,5">
             <TextBlock Text="Singer Icons" VerticalAlignment="Center"/>
             <Button HorizontalAlignment="Right" Content="Add Icon">
                 <Button.Flyout>
@@ -24,7 +29,7 @@
                 </Button.Flyout>
             </Button>
         </Panel>
-        <ScrollViewer Grid.Row="3">
+        <ScrollViewer Grid.Row="4">
             <ItemsControl ItemsSource="{Binding SingerIconUrls}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>

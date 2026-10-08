@@ -1,3 +1,5 @@
+using System.Drawing.Imaging;
+using Avalonia.Media.Imaging;
 using DiscordRPC;
 using OpenUtau.Core;
 using OpenUtau.Core.Ustx;
@@ -5,8 +7,12 @@ using OpenUtau.Core.Ustx;
 namespace OpenUtauDRPC {
     public class UDiscordRPC : ICmdSubscriber {
 
+        private const string OpenUtauIcon = "https://raw.githubusercontent.com/stakira/OpenUtau/refs/heads/pages/docs/assets/images/openutau.png";
+        private const string OpenUtauSite = "https://openutau.com/";
+
         private int currentTrack = -1;
-        public DiscordRpcClient client;
+        private readonly DiscordRpcClient client;
+        private Task? queue;
 
         public UDiscordRPC() {
             client = new DiscordRpcClient(Preferences.Default.ApplicationId);
@@ -15,22 +21,46 @@ namespace OpenUtauDRPC {
 
             client.SetPresence(new RichPresence() {
                 Assets = new Assets() {
-                    LargeImageKey = "https://raw.githubusercontent.com/stakira/OpenUtau/refs/heads/pages/docs/assets/images/openutau.png",
+                    LargeImageKey = OpenUtauIcon,
                     LargeImageText = "OpenUtau"
                 },
                 Buttons = [
-                    new() { Label = "Visit OpenUtau", Url = "https://openutau.com/" }
+                    new() { Label = "Visit OpenUtau", Url = OpenUtauSite }
                 ]
             });
 
             UpdateProject(DocManager.Inst.Project);
         }
 
-        private void UpdateSinger(USinger singer) {
-            if (Preferences.Default.SingerIconUrls.TryGetValue(singer.Name, out var iconUrl)) {
-                client.UpdateSmallAsset(iconUrl, singer.Name);
+        private async void UpdateSinger(USinger singer) {
+            var iconUrl = Preferences.Default.SingerIconUrls.GetValueOrDefault(singer.Name);
+            client.UpdateSmallAsset(OpenUtauIcon, singer.Name);
+            if (Preferences.Default.EnableLitterbox && (iconUrl == null || !(await Http.IsValid(iconUrl)))) {
+                if (queue?.Status != TaskStatus.Running) {
+                    queue = Task.Run(async () => {
+                        var queueName = singer.Name;
+                        using MemoryStream ms = new MemoryStream(singer.AvatarData);
+                        using Bitmap bmp = new Bitmap(ms);
+                        using MemoryStream png = new MemoryStream();
+                        bmp.Save(png, new PngBitmapEncoderOptions());
+                        try {
+                            var newUrl = await Litterbox.Upload(png);
+                            if (queueName == singer.Name) {
+                                client.UpdateSmallAsset(newUrl, queueName);
+                            }
+
+                            Preferences.Default.SingerIconUrls[queueName] = newUrl;
+                            Preferences.Save();
+                        } catch (Exception e) {
+                            Console.WriteLine(e.Message);
+                            client.UpdateSmallAsset(OpenUtauIcon, queueName);
+                        }
+                    });
+                }
             } else {
-                client.UpdateSmallAsset("https://raw.githubusercontent.com/stakira/OpenUtau/refs/heads/pages/docs/assets/images/openutau.png", singer.Name);
+                if (iconUrl != null) {
+                    client.UpdateSmallAsset(iconUrl, singer.Name);
+                }
             }
             UpdateSingerButton(singer.Web);
         }
@@ -38,12 +68,12 @@ namespace OpenUtauDRPC {
         private void UpdateSingerButton(string site) {
             if (string.IsNullOrEmpty(site)) {
                 client.UpdateButtons([
-                    new() { Label = "Visit OpenUtau", Url = "https://openutau.com/" }
+                    new() { Label = "Visit OpenUtau", Url = OpenUtauSite }
                 ]);
             } else {
 
                 client.UpdateButtons([
-                    new() { Label = "Visit OpenUtau", Url = "https://openutau.com/" },
+                    new() { Label = "Visit OpenUtau", Url = OpenUtauSite },
                     new() { Label = "Visit Singer Website", Url = $"{new UriBuilder(site).Uri}" }
                 ]);
             }
