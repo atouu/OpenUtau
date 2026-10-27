@@ -45,12 +45,11 @@ namespace OpenUtau.Core.Util {
                     lock (lockObj) {
                         if (ReferenceEquals(daemon, process)) {
                             daemon = null;
+                            daemonWinePath = string.Empty;
                         }
                     }
 
                     process.Dispose();
-
-                    daemonWinePath = string.Empty;
                 };
 
                 try {
