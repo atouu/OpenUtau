@@ -250,6 +250,7 @@ jobs:
           cp OpenUtau/Assets/OpenUtau.png bin/${{ matrix.arch.name }}/.DirIcon
           cp OpenUtau/Assets/AppRun bin/${{ matrix.arch.name }}
           chmod 755 bin/${{ matrix.arch.name }}/AppRun
+          chmod a+rX bin/${{ matrix.arch.name }}
           ARCH=${{ matrix.arch.linuxarch }} linuxdeploy --appdir bin/${{ matrix.arch.name }} --output appimage
           # linuxdeploy names the output by linux arch (OpenUtau-x86_64.AppImage);
           # rename to the matrix name so artifact, file, and release all match.
