@@ -37,6 +37,7 @@ namespace OpenUtau.Core.Util {
                         UseShellExecute = false,
                         RedirectStandardOutput = true,
                         RedirectStandardError = true,
+                        WorkingDirectory = PathManager.Inst.CachePath
                     },
                     EnableRaisingEvents = true
                 };
