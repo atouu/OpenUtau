@@ -111,8 +111,8 @@ namespace OpenUtau.App.ViewModels {
                 });
         }
 
-        public void OnSelectedSinger(object singer) {
-            SelectedSinger = singer as SingerEntry;
+        public void OnSelectedSinger(SingerEntry singer) {
+            SelectedSinger = singer;
             Page = 1;
         }
 
@@ -185,7 +185,7 @@ namespace OpenUtau.App.ViewModels {
                 if (!response.IsSuccessStatusCode) {
                     continue;
                 }
-                var vbs = Json.Deserialize<List<SingerEntry>>(body, settings);
+                var vbs = Json.Deserialize<SingerEntry[]>(body, settings);
                 if (vbs != null) {
                     entries.AddRange(vbs);
                 }
