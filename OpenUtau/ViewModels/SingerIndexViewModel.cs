@@ -1,19 +1,23 @@
-
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
-using OpenUtau.Core;
 using OpenUtau.App.Views;
+using OpenUtau.Core;
+using OpenUtau.Core.Util;
 using ReactiveUI;
 using ReactiveUI.Primitives;
 using ReactiveUI.SourceGenerators;
-using System.Text.Json;
 
 namespace OpenUtau.App.ViewModels {
     public partial class SingerIndexViewModel : ViewModelBase {
@@ -47,7 +51,7 @@ namespace OpenUtau.App.ViewModels {
 
             public string AltNames => string.Join(" / ", Names.Select(v => v.Value));
             public Task<bool> IsValidDirectDownload =>
-                DownloadManager.IsDirectDownload(FileUrl, ValidDLMimeTypes);
+                Downloader.IsDirectDownload(FileUrl, ValidDLMimeTypes);
         }
 
         private static readonly string[] SingerTagFilters = [
@@ -78,10 +82,9 @@ namespace OpenUtau.App.ViewModels {
         [Reactive] public partial double DownloadProgress { get; set; }
         [Reactive] public partial bool IsDownloading { get; set; }
 
-        public Interaction<SingerVariant,bool> DownloadVariant { get; private set; }
+        public Interaction<SingerVariant,bool> DownloadVariant { get; private set; } = new();
 
         public SingerIndexViewModel() {
-            DownloadVariant = new();
             Search = string.Empty;
 
             SyncVoicebanks().ContinueWith(s => {
@@ -114,31 +117,30 @@ namespace OpenUtau.App.ViewModels {
         }
 
         public void OnBack() {
+            SelectedSinger = null;
             Page = 0;
         }
 
-        public async Task OnDownloadVariant(object variant) {
-            bool valid = await DownloadVariant.Handle((SingerVariant) variant).ToTask();
-            if (!valid) {
+        public async Task OnDownloadVariant(SingerVariant variant) {
+            if (!(await DownloadVariant.Handle(variant).ToTask())) {
                 return;
             }
 
             cancellation = new();
             IsDownloading = true;
-            DownloadName = ((SingerVariant)variant).Names["en"];
+            DownloadName = variant.Names["en"];
 
-            string dest = Path.Join(PathManager.Inst.CachePath, $"{Guid.NewGuid()}");
+            string dest = Path.Join(PathManager.Inst.CachePath, $"{new Guid(MD5.HashData(Encoding.UTF8.GetBytes(DownloadName)))}");
 
-            var progress = new Progress<DownloadProgress>(dp => {
+            var progress = new Progress<Downloader.DownloadProgress>(dp => {
                 Dispatcher.UIThread.InvokeAsync(() => {
-                    DownloadCurrentSize = DownloadManager.HumanizeFileSize(dp.BytesDownloaded);
-                    DownloadTotalSize = DownloadManager.HumanizeFileSize(dp.TotalBytes);
+                    DownloadCurrentSize = Downloader.HumanizeFileSize(dp.BytesDownloaded);
+                    DownloadTotalSize = Downloader.HumanizeFileSize(dp.TotalBytes);
                     DownloadProgress = dp.BytesDownloaded * 100 / dp.TotalBytes;
                 }, DispatcherPriority.Background);
             });
 
-            await DownloadManager.DownloadFile(
-                ((SingerVariant)variant).FileUrl, dest, cancellation.Token, progress);
+            await Downloader.DownloadFile(variant.FileUrl, dest, cancellation.Token, progress);
 
             if (!cancellation.Token.IsCancellationRequested) {
                 var setup = new SingerSetupDialog() {
@@ -146,7 +148,12 @@ namespace OpenUtau.App.ViewModels {
                         ArchiveFilePath = dest,
                     }
                 };
-                setup.Show();
+                if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime {
+                        MainWindow: MainWindow mainWindow
+                    })
+                {
+                    await setup.ShowDialog(mainWindow);
+                }
             }
 
             IsDownloading = false;

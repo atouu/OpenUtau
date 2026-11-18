@@ -94,7 +94,7 @@
         </StackPanel>
         <ScrollViewer Grid.Row="1">
           <StackPanel Spacing="10">
-            <Border CornerRadius="5" BorderThickness="1" BorderBrush="{DynamicResource BorderColor}" Padding="5">
+            <Border CornerRadius="5" BorderThickness="1" BorderBrush="{DynamicResource BorderColor}" Padding="5" IsVisible="{Binding #ProfileImage.Source, Converter={x:Static ObjectConverters.IsNotNull}}">
               <Border CornerRadius="5" ClipToBounds="True" HorizontalAlignment="Center">
                 <Image Name="ProfileImage" Source="{Binding SelectedSinger.ProfileBitmap^}" MaxHeight="200" RenderOptions.BitmapInterpolationMode="HighQuality"/>
               </Border>

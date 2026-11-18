@@ -233,29 +233,7 @@ namespace OpenUtau.Core {
             var mirror = version.mirrors[0];
             string cacheDir = PathManager.Inst.CachePath;
             Directory.CreateDirectory(cacheDir);
-            byte[] data;
-            using (var client = new HttpClient()) {
-                client.Timeout = TimeSpan.FromMinutes(5);
-                using var response = await client.GetAsync(mirror.url, HttpCompletionOption.ResponseHeadersRead);
-                response.EnsureSuccessStatusCode();
-                var contentLength = response.Content.Headers.ContentLength;
-                using var responseStream = await response.Content.ReadAsStreamAsync();
-                using var ms = new MemoryStream();
-                var buffer = new byte[81920];
-                long totalRead = 0;
-                int read;
-                if (contentLength.HasValue && progress != null) progress.Report(0);
-                while ((read = await responseStream.ReadAsync(buffer, 0, buffer.Length)) > 0) {
-                    ms.Write(buffer, 0, read);
-                    totalRead += read;
-                    if (contentLength.HasValue && progress != null) {
-                        var percent = (int)(totalRead * 100 / contentLength.Value);
-                        progress.Report(Math.Min(100, percent));
-                    }
-                }
-                if (progress != null) progress.Report(100);
-                data = ms.ToArray();
-            }
+            byte[] data = await Downloader.DownloadBytes(mirror.url, progress);
             var hash = mirror.hash; // "sha256:..."
             if (!string.IsNullOrEmpty(hash) && hash.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase)) {
                 var expected = hash.Substring("sha256:".Length).ToLowerInvariant();
