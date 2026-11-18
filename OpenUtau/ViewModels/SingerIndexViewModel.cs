@@ -95,11 +95,11 @@ namespace OpenUtau.App.ViewModels {
             this.WhenAnyValue(vm => vm.Sorting)
                 .Subscribe(x => {
                     SelectedSinger = null;
-                    if (x == 0) {
-                        singers = singers?.OrderBy(v => v.Names["en"]);
-                    } else {
-                        singers = singers?.OrderByDescending(v => v.Names["en"]);
-                    }
+                    singers = x switch {
+                        0 => singers?.OrderBy(v => v.Names["en"]),
+                        1 => singers?.OrderByDescending(v => v.Names["en"]),
+                        _ => singers?.OrderBy(_ => Random.Shared.Next())
+                    };
                     SingersFiltered = singers;
                     Search = string.Empty;
                 });

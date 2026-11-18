@@ -19,6 +19,7 @@
         <ComboBox Grid.Column="2" Margin="0" SelectedIndex="{Binding Sorting}">
           <ComboBoxItem>Sort A-Z</ComboBoxItem>
           <ComboBoxItem>Sort Z-A</ComboBoxItem>
+          <ComboBoxItem>Randomized</ComboBoxItem>
         </ComboBox>
         <Panel Grid.Row="1" Grid.ColumnSpan="3" HorizontalAlignment="Center" VerticalAlignment="Center">
           <TextBlock Text="Indexing..." IsVisible="{Binding SingersFiltered, Converter={x:Static converters:ObjectConverters.IsNull}}"/>
