@@ -627,8 +627,7 @@ namespace OpenUtau.App.Views {
         }
 
         void OnMenuSingerIndex(object sender, RoutedEventArgs e) {
-            var singerIndex = new SingerIndexWindow();
-            singerIndex.Show();
+            SingerIndexWindow.Show();
         }
 
         /// <summary>

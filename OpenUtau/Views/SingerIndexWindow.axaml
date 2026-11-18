@@ -11,7 +11,7 @@
     Icon="/Assets/open-utau.ico"
     Title="Singer Index"
     WindowStartupLocation="CenterScreen"
-    Width="700" MinHeight="700">
+    Width="700" MinHeight="700" Closing="WindowClosing">
   <Grid RowDefinitions="*,auto">
     <Carousel Grid.Row="0" Margin="20" SelectedIndex="{Binding Page}">
       <Grid RowDefinitions="auto,*" ColumnDefinitions="*,10,auto">

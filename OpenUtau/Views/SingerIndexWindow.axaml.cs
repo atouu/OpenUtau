@@ -1,12 +1,16 @@
 using System;
+using Avalonia.Controls;
 using OpenUtau.App.ViewModels;
 using ReactiveUI;
 using ReactiveUI.Avalonia;
+using ReactiveUI.Primitives;
 
 namespace OpenUtau.App.Views {
     public partial class SingerIndexWindow : ReactiveWindow<SingerIndexViewModel> {
 
-        public SingerIndexWindow() {
+        private static Window? _instance;
+
+        private SingerIndexWindow() {
             DataContext = ViewModel = new SingerIndexViewModel();
             InitializeComponent();
 
@@ -41,6 +45,29 @@ namespace OpenUtau.App.Views {
                         IsEnabled = true;
                     }));
             });
+
+            ViewModel.WhenAnyValue(vm => vm.IsDownloading)
+                .Skip(1)
+                .Subscribe(isDownloading => {
+                    if (!isDownloading && !IsVisible) {
+                        Close();
+                    }
+                });
+        }
+
+        public void WindowClosing(object? sender, WindowClosingEventArgs e) {
+            if (ViewModel?.IsDownloading == true) {
+                e.Cancel = true;
+                Hide();
+                return;
+            }
+            _instance = null;
+        }
+
+        public static new void Show() {
+            _instance ??= new SingerIndexWindow();
+            _instance.Show();
+            _instance.Activate();
         }
     }
 }
