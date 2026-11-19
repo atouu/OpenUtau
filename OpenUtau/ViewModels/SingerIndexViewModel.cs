@@ -70,7 +70,7 @@ namespace OpenUtau.App.ViewModels {
         private CancellationTokenSource? cancellation;
         private IEnumerable<SingerEntry>? singers;
 
-        [Reactive] public partial IEnumerable<SingerEntry>? SingersFiltered { get; set; }
+        [Reactive] public partial IEnumerable<SingerEntry>? SingersList { get; set; }
         [Reactive] public partial SingerEntry? SelectedSinger { get; set; }
         [Reactive] public partial string Search { get; set; }
         [Reactive] public partial int Page { get; set; }
@@ -82,6 +82,9 @@ namespace OpenUtau.App.ViewModels {
         [Reactive] public partial double DownloadProgress { get; set; }
         [Reactive] public partial bool IsDownloading { get; set; }
 
+        [Reactive] public partial string Filter { get; set; } = "all";
+        public string[] FilterList => ["all", .. SingerTagFilters];
+
         public Interaction<SingerVariant,bool> DownloadVariant { get; private set; } = new();
 
         public SingerIndexViewModel() {
@@ -89,26 +92,26 @@ namespace OpenUtau.App.ViewModels {
 
             SyncVoicebanks().ContinueWith(s => {
                 singers = s.Result;
-                SingersFiltered = singers;
+                SingersList = GetFilteredSingers();
             });
 
-            this.WhenAnyValue(vm => vm.Sorting)
+            this.WhenAnyValue(vm => vm.Search, vm => vm.Filter, vm => vm.Sorting)
+                .Skip(1)
                 .Subscribe(x => {
-                    SelectedSinger = null;
-                    singers = x switch {
-                        0 => singers?.OrderBy(v => v.Names["en"]),
-                        1 => singers?.OrderByDescending(v => v.Names["en"]),
-                        _ => singers?.OrderBy(_ => Random.Shared.Next())
-                    };
-                    SingersFiltered = singers;
-                    Search = string.Empty;
+                    SingersList = GetFilteredSingers();
                 });
+        }
 
-            this.WhenAnyValue(vm => vm.Search)
-                .Subscribe(x => {
-                    SingersFiltered = singers?.Where(v => 
-                        v.AltNames.Contains(x, StringComparison.CurrentCultureIgnoreCase));
-                });
+        private IEnumerable<SingerEntry>? GetFilteredSingers() {
+            var temp = singers?.Where(v =>
+                    v.AltNames.Contains(Search, StringComparison.CurrentCultureIgnoreCase)
+                    && (Filter == "all" || v.AllTags.Contains(Filter)));
+
+            return Sorting switch {
+                0 => temp?.OrderBy(v => v.Names["en"]),
+                1 => temp?.OrderByDescending(v => v.Names["en"]),
+                _ => temp?.OrderBy(_ => Random.Shared.Next())
+            };
         }
 
         public void OnSelectedSinger(SingerEntry singer) {

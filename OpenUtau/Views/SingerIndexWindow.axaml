@@ -14,73 +14,94 @@
     Width="700" MinHeight="700" Closing="WindowClosing">
   <Grid RowDefinitions="*,auto">
     <Carousel Grid.Row="0" Margin="20" SelectedIndex="{Binding Page}">
-      <Grid RowDefinitions="auto,*" ColumnDefinitions="*,10,auto">
+      <Grid RowDefinitions="auto,auto,*" ColumnDefinitions="*,10,auto">
         <TextBox Watermark="Search Singer" VerticalAlignment="Center" Grid.Column="0" Text="{Binding Search}"/>
         <ComboBox Grid.Column="2" Margin="0" SelectedIndex="{Binding Sorting}">
           <ComboBoxItem>Sort A-Z</ComboBoxItem>
           <ComboBoxItem>Sort Z-A</ComboBoxItem>
           <ComboBoxItem>Randomized</ComboBoxItem>
         </ComboBox>
-        <Panel Grid.Row="1" Grid.ColumnSpan="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-          <TextBlock Text="Indexing..." IsVisible="{Binding SingersFiltered, Converter={x:Static converters:ObjectConverters.IsNull}}"/>
-        </Panel>
-        <ScrollViewer Grid.Row="1" Grid.ColumnSpan="3">
-        <ItemsControl ItemsSource="{Binding SingersFiltered}">
-          <ItemsControl.ItemsPanel>
+        <ListBox Grid.Row="1" ItemsSource="{Binding FilterList}" SelectedValue="{Binding Filter}" Background="Transparent" Margin="0,5" SelectionMode="AlwaysSelected">
+          <ListBox.Styles>
+              <Style Selector="ListBoxItem">
+                  <Setter Property="Padding" Value="8,4" />
+                  <Setter Property="CornerRadius" Value="100" />
+                  <Setter Property="BorderThickness" Value="1" />
+                  <Setter Property="BorderBrush" Value="{DynamicResource NeutralAccentBrushSemi}" />
+              </Style>
+              <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+                  <Setter Property="Background" Value="{DynamicResource NeutralAccentBrushSemi2}" />
+              </Style>
+              <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+                  <Setter Property="Background" Value="{DynamicResource NeutralAccentBrushSemi}" />
+              </Style>
+          </ListBox.Styles>
+          <ListBox.ItemsPanel>
             <ItemsPanelTemplate>
-              <VirtualizingStackPanel />
+              <StackPanel Spacing="5" Orientation="Horizontal"/>
             </ItemsPanelTemplate>
-          </ItemsControl.ItemsPanel>
-          <ItemsControl.ItemTemplate>
-            <DataTemplate>
-              <Button Classes="clear" CornerRadius="5" BorderThickness="1" BorderBrush="{DynamicResource BorderColor}"
-                      Padding="15" Height="NaN" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                      Command="{Binding $parent[ItemsControl].DataContext.OnSelectedSinger}" CommandParameter="{Binding}">
-                <StackPanel Spacing="8">
-                  <StackPanel Orientation="Horizontal" Spacing="5">
-                    <TextBlock Text="{Binding Names[en]}" FontSize="16" FontWeight="Bold"/>
-                    <TextBlock VerticalAlignment="Center" Text="{Binding Id, StringFormat='@{0}'}" FontSize="13" FontWeight="Thin"/>
+          </ListBox.ItemsPanel>
+        </ListBox>
+        <Panel Grid.Row="2" Grid.ColumnSpan="3" HorizontalAlignment="Center" VerticalAlignment="Center">
+          <TextBlock Text="Indexing..." IsVisible="{Binding SingersList, Converter={x:Static converters:ObjectConverters.IsNull}}"/>
+        </Panel>
+        <ScrollViewer Grid.Row="2" Grid.ColumnSpan="3">
+          <ItemsControl ItemsSource="{Binding SingersList}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <VirtualizingStackPanel />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <Button Classes="clear" CornerRadius="5" BorderThickness="1" BorderBrush="{DynamicResource BorderColor}"
+                        Padding="15" Height="NaN" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+                        Command="{Binding $parent[ItemsControl].DataContext.OnSelectedSinger}" CommandParameter="{Binding}">
+                  <StackPanel Spacing="8">
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                      <TextBlock Text="{Binding Names[en]}" FontSize="16" FontWeight="Bold"/>
+                      <TextBlock VerticalAlignment="Center" Text="{Binding Id, StringFormat='@{0}'}" FontSize="13" FontWeight="Thin"/>
+                    </StackPanel>
+                    <TextBlock Text="{Binding AltNames}" FontSize="13" Opacity=".8" FontWeight="Thin"/>
+                    <ItemsControl ItemsSource="{Binding AllVariantsEn}" >
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <WrapPanel HorizontalAlignment="Left"/>
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                          <Border CornerRadius="10" Padding="6,3" Margin="0,0,3,3">
+                            <Border.Background>
+                              <SolidColorBrush Color="{DynamicResource BorderColor}" Opacity=".25"/>
+                            </Border.Background>
+                            <TextBlock FontSize="13" Text="{Binding}"/>
+                          </Border>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <ItemsControl ItemsSource="{Binding AllTags}" >
+                      <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                          <WrapPanel HorizontalAlignment="Left"/>
+                        </ItemsPanelTemplate>
+                      </ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                          <Border CornerRadius="10" Padding="6,3" Margin="0,0,3,3">
+                            <Border.Background>
+                              <SolidColorBrush Color="{DynamicResource SystemAccentColorLight1}" Opacity=".3"/>
+                            </Border.Background>
+                            <TextBlock Foreground="{DynamicResource SystemAccentColor}" Text="{Binding}"/>
+                          </Border>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
                   </StackPanel>
-                  <TextBlock Text="{Binding AltNames}" FontSize="13" Opacity=".8" FontWeight="Thin"/>
-                  <ItemsControl ItemsSource="{Binding AllVariantsEn}" >
-                    <ItemsControl.ItemsPanel>
-                      <ItemsPanelTemplate>
-                        <WrapPanel HorizontalAlignment="Left"/>
-                      </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                      <DataTemplate>
-                        <Border CornerRadius="10" Padding="6,3" Margin="0,0,3,3">
-                          <Border.Background>
-                            <SolidColorBrush Color="{DynamicResource BorderColor}" Opacity=".25"/>
-                          </Border.Background>
-                          <TextBlock FontSize="13" Text="{Binding}"/>
-                        </Border>
-                      </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                  </ItemsControl>
-                  <ItemsControl ItemsSource="{Binding AllTags}" >
-                    <ItemsControl.ItemsPanel>
-                      <ItemsPanelTemplate>
-                        <WrapPanel HorizontalAlignment="Left"/>
-                      </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                      <DataTemplate>
-                        <Border CornerRadius="10" Padding="6,3" Margin="0,0,3,3">
-                          <Border.Background>
-                            <SolidColorBrush Color="{DynamicResource SystemAccentColorLight1}" Opacity=".3"/>
-                          </Border.Background>
-                          <TextBlock Foreground="{DynamicResource SystemAccentColor}" Text="{Binding}"/>
-                        </Border>
-                      </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                  </ItemsControl>
-                </StackPanel>
-              </Button>
-            </DataTemplate>
-          </ItemsControl.ItemTemplate>
-        </ItemsControl>
+                </Button>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>  
         </ScrollViewer>
       </Grid>
 
